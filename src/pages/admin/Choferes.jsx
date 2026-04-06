@@ -30,6 +30,25 @@ export default function Choferes() {
     finally { setLoading(false) }
   }
 
+  async function eliminarChofer(id, nombre) {
+    if (!confirm(`¿Estás SEGURO de eliminar permanentemente al chofer ${nombre}? Esta acción lo quitará de la lista activa.`)) return
+    
+    try {
+      setLoading(true)
+      const { error } = await supabase
+        .from('choferes')
+        .update({ activo: false })
+        .eq('id', id)
+      
+      if (error) throw error
+      await cargarChoferes()
+    } catch (err) {
+      alert('Error: ' + err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const filtrados = choferes.filter(c => {
     if (filtroNombre && !c.nombre.toLowerCase().includes(filtroNombre.toLowerCase()) && !c.dni.includes(filtroNombre)) return false
     return true
@@ -117,9 +136,16 @@ export default function Choferes() {
                       ) : <span className="text-xs text-slate-500">Sin datos</span>}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <Link to={`/admin/choferes/${c.id}/editar`} className="p-2 text-slate-500 hover:text-lazdin-emerald transition-colors inline-block">
+                      <Link to={`/admin/choferes/${c.id}/editar`} className="p-2 text-slate-500 hover:text-lazdin-emerald transition-colors inline-block" title="Editar Chofer">
                         <span className="material-symbols-outlined text-lg">edit</span>
                       </Link>
+                      <button 
+                        onClick={() => eliminarChofer(c.id, c.nombre)}
+                        className="p-2 text-slate-600 hover:text-red-400 transition-colors inline-block"
+                        title="Eliminar Chofer"
+                      >
+                        <span className="material-symbols-outlined text-lg">delete</span>
+                      </button>
                     </td>
                   </tr>
                 )

@@ -20,6 +20,27 @@ export default function Vehiculos() {
     finally { setLoading(false) }
   }
 
+  const [eliminandoId, setEliminandoId] = useState(null)
+
+  async function fact_eliminarVehiculo(id, patente) {
+    if (!confirm(`¿Estás SEGURO de eliminar permanentemente el vehículo con patente ${patente}?`)) return
+    
+    try {
+      setLoading(true)
+      const { error } = await supabase
+        .from('vehiculos')
+        .update({ activo: false })
+        .eq('id', id)
+      
+      if (error) throw error
+      await cargarVehiculos()
+    } catch (err) {
+      alert('Error: ' + err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const filtrados = vehiculos.filter(v => {
     if (filtroPatente && !v.patente.toLowerCase().includes(filtroPatente.toLowerCase())) return false
     if (filtroPropietario !== 'todos' && v.tipo_propietario !== filtroPropietario) return false
@@ -127,12 +148,19 @@ export default function Vehiculos() {
                       ) : <span className="text-xs text-slate-500">Sin datos</span>}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <Link to={`/admin/vehiculos/${v.id}`} className="p-2 text-slate-500 hover:text-lazdin-emerald transition-colors inline-block">
+                      <Link to={`/admin/vehiculos/${v.id}`} className="p-2 text-slate-500 hover:text-lazdin-emerald transition-colors inline-block" title="Ver Detalles">
                         <span className="material-symbols-outlined text-lg">visibility</span>
                       </Link>
-                      <Link to={`/admin/vehiculos/${v.id}/editar`} className="p-2 text-slate-500 hover:text-lazdin-emerald transition-colors inline-block">
+                      <Link to={`/admin/vehiculos/${v.id}/editar`} className="p-2 text-slate-500 hover:text-lazdin-emerald transition-colors inline-block" title="Editar">
                         <span className="material-symbols-outlined text-lg">edit</span>
                       </Link>
+                      <button 
+                        onClick={() => fact_eliminarVehiculo(v.id, v.patente)}
+                        className="p-2 text-slate-600 hover:text-red-400 transition-colors inline-block"
+                        title="Eliminar Vehículo"
+                      >
+                        <span className="material-symbols-outlined text-lg">delete</span>
+                      </button>
                     </td>
                   </tr>
                 )
