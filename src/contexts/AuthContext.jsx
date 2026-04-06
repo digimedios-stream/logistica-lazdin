@@ -10,6 +10,7 @@ export function AuthProvider({ children }) {
   const [userRole, setUserRole] = useState(null) // 'admin' | 'chofer'
   const [choferData, setChoferData] = useState(null)
   const [vehiculoAsignado, setVehiculoAsignado] = useState(null)
+  const [adminNombre, setAdminNombre] = useState('Administrador')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -47,16 +48,14 @@ export function AuthProvider({ children }) {
 
     try {
       // 1. Obtener rol del usuario
-      // Agregamos un ligero reintento o delay si detectamos falla de red/lock
       const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
-        .select('rol, chofer_id')
+        .select('rol, chofer_id, nombre')
         .eq('user_id', userId)
         .maybeSingle()
 
       if (roleError) {
         console.error('Error obteniendo rol:', roleError)
-        // No bloqueamos el loading aquí si es un error temporal, permitimos reintentar
         setLoading(false)
         return
       }
@@ -68,6 +67,9 @@ export function AuthProvider({ children }) {
       }
 
       setUserRole(roleData.rol)
+      if (roleData.rol === 'admin') {
+        setAdminNombre(roleData.nombre || 'Administrador')
+      }
 
       // 2. Si es chofer, cargar datos adicionales
       if (roleData.rol === 'chofer' && roleData.chofer_id) {
@@ -125,6 +127,7 @@ export function AuthProvider({ children }) {
     logout,
     isAdmin: userRole === 'admin',
     isChofer: userRole === 'chofer',
+    adminNombre,
     esTercero: vehiculoAsignado?.tipo_propietario === 'tercero',
     propietarioNombre: vehiculoAsignado?.tipo_propietario === 'tercero'
       ? vehiculoAsignado.propietario_nombre

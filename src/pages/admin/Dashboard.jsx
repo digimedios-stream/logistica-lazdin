@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { getSaludo, formatFechaCorta, estadoVencimiento, formatKm, formatConsumo, formatMoneda } from '@/lib/utils'
+import { useAuth } from '@/contexts/AuthContext'
 
 function KPICard({ icon, label, value, badge, badgeColor, borderColor }) {
   return (
@@ -19,6 +20,7 @@ function KPICard({ icon, label, value, badge, badgeColor, borderColor }) {
 }
 
 export default function AdminDashboard() {
+  const { adminNombre } = useAuth()
   const [stats, setStats] = useState(null)
   const [vencimientos, setVencimientos] = useState([])
   const [loading, setLoading] = useState(true)
@@ -58,7 +60,7 @@ export default function AdminDashboard() {
     <div className="space-y-8 animate-in">
       {/* Welcome Header */}
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">{getSaludo()}, Administrador</h2>
+        <h2 className="text-2xl font-bold tracking-tight">{getSaludo()}, {adminNombre}</h2>
         <p className="text-lazdin-on-surface-variant text-sm mt-1">Estado actual de la red logística de Lazdin</p>
       </div>
 

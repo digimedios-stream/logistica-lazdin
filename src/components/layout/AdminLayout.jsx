@@ -31,7 +31,7 @@ const MOBILE_NAV = [
 ]
 
 export default function AdminLayout() {
-  const { user, logout } = useAuth()
+  const { user, logout, adminNombre } = useAuth()
   const { tema } = useTheme()
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -150,7 +150,7 @@ export default function AdminLayout() {
           </button>
           <div className="h-8 w-px bg-slate-800 mx-1 hidden sm:block" />
           <button className="flex items-center gap-2 p-1 pl-3 text-slate-400 hover:bg-slate-800/50 hover:text-white transition-colors rounded-full active:scale-95">
-            <span className="text-xs font-semibold hidden lg:block">Admin</span>
+            <span className="text-xs font-semibold hidden lg:block">{adminNombre}</span>
             <span className="material-symbols-outlined text-2xl text-slate-200">account_circle</span>
           </button>
           {/* Botón de logout rápido para móvil */}
