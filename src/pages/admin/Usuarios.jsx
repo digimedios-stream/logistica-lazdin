@@ -26,36 +26,14 @@ export default function Usuarios() {
   async function cargarUsuarios() {
     setLoading(true)
     try {
-      // Usamos una query que traiga el nombre del chofer si existe
+      // Usamos la vista que ya tiene todo procesado en la base de datos
       const { data, error } = await supabase
-        .from('user_roles')
-        .select(`
-          user_id,
-          rol,
-          nombre,
-          chofer_id,
-          activo,
-          created_at,
-          chofer:choferes(nombre),
-          auth_user:auth_user_id_fkey(email)
-        `)
+        .from('usuarios')
+        .select('*')
         .order('created_at', { ascending: false })
 
       if (error) throw error
-      
-      // Mapear para que sea compatible con el resto del código
-      const usuariosMapeados = data.map(u => ({
-        id: u.user_id,
-        nombre: u.nombre,
-        rol: u.rol,
-        chofer_id: u.chofer_id,
-        chofer_nombre: u.chofer?.nombre,
-        email: u.auth_user?.email,
-        activo: u.activo,
-        created_at: u.created_at
-      }))
-
-      setUsuarios(usuariosMapeados)
+      setUsuarios(data || [])
     } catch (err) {
       console.error('Error cargando usuarios:', err)
     } finally {
