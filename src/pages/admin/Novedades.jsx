@@ -140,6 +140,17 @@ export default function AdminNovedades() {
                 </div>
 
                 <div className="flex lg:flex-col justify-end lg:justify-center items-center gap-3 shrink-0 pt-4 lg:pt-0 lg:pl-6 lg:border-l lg:border-slate-800">
+                  {nov.foto_url && (
+                    <a 
+                      href={nov.foto_url} 
+                      target="_blank" 
+                      rel="noreferrer" 
+                      className="w-full lg:w-32 py-2 px-4 rounded-xl text-xs font-black bg-lazdin-surface-highest border border-slate-700 text-slate-300 hover:text-white hover:border-slate-500 transition-all flex items-center justify-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-lg">image</span>
+                      Evidencia
+                    </a>
+                  )}
                   <button
                     onClick={() => toggleEstado(nov.id, nov.estado)}
                     className={`w-full lg:w-32 py-2 px-4 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 ${

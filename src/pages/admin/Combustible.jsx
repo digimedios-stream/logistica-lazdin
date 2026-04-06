@@ -166,34 +166,53 @@ export default function Combustible() {
                      <th className="px-6 py-4">Fecha</th>
                      <th className="px-6 py-4">Patente</th>
                      <th className="px-6 py-4">Litros</th>
-                     <th className="px-6 py-4">Monto</th>
+                     <th className="px-6 py-4">Total</th>
                      <th className="px-6 py-4">KM</th>
+                     <th className="px-6 py-4">Fotos</th>
                    </tr>
                  </thead>
                  <tbody className="divide-y divide-slate-800">
                    {loading ? (
-                     <tr><td colSpan="5" className="px-6 py-8 text-center text-slate-500">Cargando historial...</td></tr>
+                     <tr><td colSpan="6" className="px-6 py-8 text-center text-slate-500">Cargando historial...</td></tr>
                    ) : cargas.length === 0 ? (
-                     <tr><td colSpan="5" className="px-6 py-8 text-center text-slate-500">No hay cargas registradas aún.</td></tr>
-                   ) : cargas.map(c => (
-                     <tr key={c.id} className="hover:bg-slate-800/10">
-                       <td className="px-6 py-4 text-xs font-mono text-slate-400">
-                         {formatFechaCorta(c.fecha_hora)}
-                       </td>
-                       <td className="px-6 py-4">
-                         <span className="font-bold text-white uppercase">{c.vehiculo?.patente}</span>
-                       </td>
-                       <td className="px-6 py-4 text-amber-500 font-bold">
-                         {c.litros} L
-                       </td>
-                       <td className="px-6 py-4 font-mono font-bold text-lazdin-emerald">
-                         {formatMoneda(c.precio_total)}
-                       </td>
-                       <td className="px-6 py-4 font-mono text-slate-400 text-xs">
-                         {c.odometro_actual} km
-                       </td>
-                     </tr>
-                   ))}
+                     <tr><td colSpan="6" className="px-6 py-8 text-center text-slate-500">No hay cargas registradas aún.</td></tr>
+                   ) : (
+                     cargas.map(c => (
+                       <tr key={c.id} className="hover:bg-slate-800/10">
+                         <td className="px-6 py-4 text-xs font-mono text-slate-400">
+                           {formatFechaCorta(c.fecha_hora)}
+                         </td>
+                         <td className="px-6 py-4">
+                           <div className="font-bold text-white uppercase">{c.vehiculo?.patente || 'S/P'}</div>
+                           <div className="text-[10px] text-slate-500 italic">{c.chofer?.nombre || 'Admin'}</div>
+                         </td>
+                         <td className="px-6 py-4 text-amber-500 font-bold whitespace-nowrap">
+                           {c.litros} L
+                         </td>
+                         <td className="px-6 py-4 font-mono font-bold text-lazdin-emerald">
+                           {formatMoneda(c.precio_total)}
+                         </td>
+                         <td className="px-6 py-4 font-mono text-slate-400 text-xs">
+                           {c.odometro_actual} km
+                         </td>
+                         <td className="px-6 py-4">
+                           <div className="flex gap-2 text-slate-400">
+                             {c.foto_url && (
+                               <a href={c.foto_url} target="_blank" rel="noreferrer" title="Ver Ticket" className="hover:text-lazdin-emerald transition-colors">
+                                 <span className="material-symbols-outlined text-xl">receipt_long</span>
+                               </a>
+                             )}
+                             {c.foto_surtidor_url && (
+                               <a href={c.foto_surtidor_url} target="_blank" rel="noreferrer" title="Ver Surtidor" className="hover:text-amber-500 transition-colors">
+                                 <span className="material-symbols-outlined text-xl">gas_meter</span>
+                               </a>
+                             )}
+                             {!c.foto_url && !c.foto_surtidor_url && <span className="text-slate-700">-</span>}
+                           </div>
+                         </td>
+                       </tr>
+                     ))
+                   )}
                  </tbody>
                </table>
              </div>
