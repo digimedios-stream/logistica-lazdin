@@ -59,6 +59,14 @@ export default function ChoferLayout() {
                   <span className="material-symbols-outlined text-slate-400">account_circle</span>
                 )}
               </div>
+              {/* Botón de logout rápido para móvil */}
+              <button 
+                onClick={handleLogout}
+                className="md:hidden flex items-center justify-center w-9 h-9 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 active:scale-90 transition-all"
+                title="Cerrar Sesión"
+              >
+                <span className="material-symbols-outlined text-lg">logout</span>
+              </button>
             </div>
           </div>
         </div>

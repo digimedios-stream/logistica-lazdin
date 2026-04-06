@@ -153,6 +153,14 @@ export default function AdminLayout() {
             <span className="text-xs font-semibold hidden lg:block">Admin</span>
             <span className="material-symbols-outlined text-2xl text-slate-200">account_circle</span>
           </button>
+          {/* Botón de logout rápido para móvil */}
+          <button 
+            onClick={handleLogout}
+            className="md:hidden flex items-center justify-center w-9 h-9 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 active:scale-90 transition-all ml-1"
+            title="Cerrar Sesión"
+          >
+            <span className="material-symbols-outlined text-lg">logout</span>
+          </button>
         </div>
       </header>
 
