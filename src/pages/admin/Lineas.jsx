@@ -39,6 +39,39 @@ export default function LineasPage() {
     }
   }
 
+  async function desvincularVehiculo(vehiculoId) {
+    if (!confirm('¿Desvincular este vehículo de esta línea?')) return
+    setSaving(true)
+    try {
+      const { error } = await supabase.from('vehiculos').update({ linea_principal_id: null }).eq('id', vehiculoId)
+      if (error) throw error
+      await cargarLineas()
+    } catch (err) {
+      alert('Error al desvincular: ' + err.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function eliminarLinea(id) {
+    if (!confirm('¿Estás SEGURO de eliminar esta línea de recorrido? Esta acción no se puede deshacer.')) return
+    setSaving(true)
+    try {
+      const { error } = await supabase.from('lineas').delete().eq('id', id)
+      if (error) {
+        if (error.code === '23503') {
+          throw new Error('No se puede eliminar la línea porque tiene vehículos o turnos asociados. Primero desvincula el personal/flota.')
+        }
+        throw error
+      }
+      await cargarLineas()
+    } catch (err) {
+      alert('No se pudo eliminar: ' + err.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
   async function cargarLineas() {
     try {
       const { data } = await supabase
@@ -62,6 +95,7 @@ export default function LineasPage() {
         ...l,
         personal: l.vehiculos
           ?.map(v => ({
+            id: v.id,
             patente: v.patente,
             chofer: v.asignaciones?.find(a => a.activo)?.chofer?.nombre
           }))
@@ -194,11 +228,19 @@ export default function LineasPage() {
                    <div className="flex flex-wrap gap-2">
                      {linea.personal.length > 0 ? (
                        linea.personal.map((p, idx) => (
-                        <div key={idx} className="flex items-center gap-2 bg-slate-900/40 border border-slate-800 px-3 py-1.5 rounded-lg">
+                        <div key={idx} className="flex items-center gap-2 bg-slate-900/40 border border-slate-800 pr-1.5 pl-3 py-1.5 rounded-lg group/bubble">
                            <span className="material-symbols-outlined text-sm text-lazdin-emerald">local_shipping</span>
                            <span className="text-xs font-bold text-white uppercase">{p.patente}</span>
                            <span className="text-xs text-slate-400">—</span>
                            <span className="text-xs text-slate-300 italic">{p.chofer || 'S/Chofer'}</span>
+                           {/* Botón de Desvincular */}
+                           <button 
+                             onClick={() => desvincularVehiculo(p.id)} 
+                             className="ml-1 w-5 h-5 flex items-center justify-center rounded-md bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all opacity-0 group-hover/bubble:opacity-100"
+                             title="Desvincular de esta línea"
+                           >
+                             <span className="material-symbols-outlined text-[12px] font-black">close</span>
+                           </button>
                         </div>
                        ))
                      ) : (
@@ -230,11 +272,16 @@ export default function LineasPage() {
                    </button>
                 </div>
               </div>
-              <div className="flex flex-col items-end gap-3">
+              <div className="flex flex-col items-end gap-3 self-start">
                 {linea.remuneracion_base > 0 && <span className="text-emerald-400 font-bold">{formatMoneda(linea.remuneracion_base)}</span>}
-                <button onClick={() => handleEdit(linea)} className="text-slate-500 hover:text-white transition-colors p-2">
-                  <span className="material-symbols-outlined text-sm">edit</span>
-                </button>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => handleEdit(linea)} className="text-slate-500 hover:text-white transition-colors p-2" title="Editar">
+                    <span className="material-symbols-outlined text-sm">edit</span>
+                  </button>
+                  <button onClick={() => eliminarLinea(linea.id)} className="text-slate-600 hover:text-red-400 transition-colors p-2" title="Eliminar Línea">
+                    <span className="material-symbols-outlined text-sm">delete</span>
+                  </button>
+                </div>
               </div>
             </div>
           ))}
