@@ -4,24 +4,58 @@ import { formatFechaHora } from '@/lib/utils'
 
 export default function Usuarios() {
   const [usuarios, setUsuarios] = useState([])
+  const [choferes, setChoferes] = useState([])
   const [loading, setLoading] = useState(true)
   const [mostrarModal, setMostrarModal] = useState(false)
   const [creandoUsuario, setCreandoUsuario] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   
-  const initialState = { id: '', email: '', password: '', nombre: '', rol: 'chofer' }
+  const initialState = { id: '', email: '', password: '', nombre: '', rol: 'chofer', chofer_id: '' }
   const [form, setForm] = useState(initialState)
 
   useEffect(() => {
     cargarUsuarios()
+    cargarChoferes()
   }, [])
+
+  async function cargarChoferes() {
+    const { data } = await supabase.from('choferes').select('id, nombre').eq('activo', true).order('nombre')
+    setChoferes(data || [])
+  }
 
   async function cargarUsuarios() {
     setLoading(true)
     try {
-      const { data, error } = await supabase.from('usuarios').select('*').order('created_at', { ascending: false })
+      // Usamos una query que traiga el nombre del chofer si existe
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select(`
+          user_id,
+          rol,
+          nombre,
+          chofer_id,
+          activo,
+          created_at,
+          chofer:choferes(nombre),
+          auth_user:auth_user_id_fkey(email)
+        `)
+        .order('created_at', { ascending: false })
+
       if (error) throw error
-      setUsuarios(data || [])
+      
+      // Mapear para que sea compatible con el resto del código
+      const usuariosMapeados = data.map(u => ({
+        id: u.user_id,
+        nombre: u.nombre,
+        rol: u.rol,
+        chofer_id: u.chofer_id,
+        chofer_nombre: u.chofer?.nombre,
+        email: u.auth_user?.email,
+        activo: u.activo,
+        created_at: u.created_at
+      }))
+
+      setUsuarios(usuariosMapeados)
     } catch (err) {
       console.error('Error cargando usuarios:', err)
     } finally {
@@ -35,7 +69,8 @@ export default function Usuarios() {
       email: u.email,
       password: '',
       nombre: u.nombre,
-      rol: u.rol
+      rol: u.rol,
+      chofer_id: u.chofer_id || ''
     })
     setIsEditing(true)
     setMostrarModal(true)
@@ -88,7 +123,8 @@ export default function Usuarios() {
           email: form.email,
           password: form.password,
           nombre: form.nombre,
-          rol: form.rol
+          rol: form.rol,
+          chofer_id: form.chofer_id || null
         }
       })
 
@@ -148,7 +184,10 @@ export default function Usuarios() {
                         </span>
                       </div>
                       <div>
-                        <div className="font-extrabold text-white text-sm leading-tight group-hover:text-lazdin-emerald transition-colors">{u.nombre}</div>
+                        <div className="font-extrabold text-white text-sm leading-tight group-hover:text-lazdin-emerald transition-colors">
+                          {u.nombre}
+                          {u.chofer_nombre && <span className="ml-2 text-slate-500 font-normal italic text-[11px]">— {u.chofer_nombre}</span>}
+                        </div>
                         <div className="text-[10px] text-slate-500 font-mono italic">{u.email}</div>
                       </div>
                     </div>
@@ -210,9 +249,30 @@ export default function Usuarios() {
                   <label className="text-[10px] uppercase font-black text-slate-500 mb-1.5 block">Rol de Sistema</label>
                   <div className="grid grid-cols-2 gap-3">
                     <button type="button" onClick={() => setForm({...form, rol: 'chofer'})} className={`py-3 rounded-xl border font-bold text-xs ${form.rol === 'chofer' ? 'bg-blue-500/20 border-blue-500 text-blue-400' : 'bg-slate-900 border-slate-700 text-slate-500'}`}>CHOFER</button>
-                    <button type="button" onClick={() => setForm({...form, rol: 'admin'})} className={`py-3 rounded-xl border font-bold text-xs ${form.rol === 'admin' ? 'bg-lazdin-emerald/20 border-lazdin-emerald text-lazdin-emerald' : 'bg-slate-900 border-slate-700 text-slate-500'}`}>ADMIN</button>
+                    <button type="button" onClick={() => setForm({...form, rol: 'admin', chofer_id: null})} className={`py-3 rounded-xl border font-bold text-xs ${form.rol === 'admin' ? 'bg-lazdin-emerald/20 border-lazdin-emerald text-lazdin-emerald' : 'bg-slate-900 border-slate-700 text-slate-500'}`}>ADMIN</button>
                   </div>
                 </div>
+
+                {form.rol === 'chofer' && (
+                  <div className="animate-in slide-in-from-top-2 duration-300">
+                    <label className="text-[10px] uppercase font-black text-amber-500 mb-1.5 block flex items-center gap-1">
+                      <span className="material-symbols-outlined text-sm">link</span>
+                      Chofer Real Asociado (Obligatorio)
+                    </label>
+                    <select 
+                      required 
+                      value={form.chofer_id || ''} 
+                      onChange={e => setForm({...form, chofer_id: e.target.value})}
+                      className="w-full bg-slate-900 border border-amber-500/30 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-amber-500/40 outline-none transition-all"
+                    >
+                      <option value="">Selecciona al chofer de la lista...</option>
+                      {choferes.map(c => (
+                        <option key={c.id} value={c.id}>{c.nombre}</option>
+                      ))}
+                    </select>
+                    <p className="text-[10px] text-slate-500 mt-2 italic px-1 text-pretty">Indica qué registro de la lista de choferes podrá usar esta cuenta de acceso.</p>
+                  </div>
+                )}
               </div>
 
               <div className="pt-4 flex gap-3">
