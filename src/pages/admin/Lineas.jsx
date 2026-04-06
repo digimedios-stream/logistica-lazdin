@@ -4,6 +4,7 @@ import { formatMoneda } from '@/lib/utils'
 
 export default function LineasPage() {
   const [lineas, setLineas] = useState([])
+  const [todosVehiculos, setTodosVehiculos] = useState([])
   const [loading, setLoading] = useState(true)
   const [isEditing, setIsEditing] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -14,13 +15,61 @@ export default function LineasPage() {
   }
   const [form, setForm] = useState(initialState)
 
-  useEffect(() => { cargarLineas() }, [])
+  useEffect(() => { 
+    cargarLineas() 
+    cargarVehiculos()
+  }, [])
+
+  async function cargarVehiculos() {
+    const { data } = await supabase.from('vehiculos').select('id, patente').eq('activo', true).order('patente')
+    setTodosVehiculos(data || [])
+  }
+
+  async function vincularVehiculo(vehiculoId, lineaId) {
+    if (!vehiculoId) return
+    setSaving(true)
+    try {
+      const { error } = await supabase.from('vehiculos').update({ linea_principal_id: lineaId }).eq('id', vehiculoId)
+      if (error) throw error
+      await cargarLineas()
+    } catch (err) {
+      alert('Error al vincular: ' + err.message)
+    } finally {
+      setSaving(false)
+    }
+  }
 
   async function cargarLineas() {
     try {
-      const { data } = await supabase.from('lineas').select('*').order('nombre')
-      setLineas(data || [])
-    } catch (err) { console.error(err) }
+      const { data } = await supabase
+        .from('lineas')
+        .select(`
+          *,
+          vehiculos:vehiculos (
+            id, 
+            patente,
+            asignaciones:asignaciones_vehiculo_chofer(
+              id,
+              activo,
+              chofer:choferes(nombre)
+            )
+          )
+        `)
+        .order('nombre')
+      
+      // Filtrar solo asignaciones activas para cada vehículo
+      const lineasProcesadas = (data || []).map(l => ({
+        ...l,
+        personal: l.vehiculos
+          ?.map(v => ({
+            patente: v.patente,
+            chofer: v.asignaciones?.find(a => a.activo)?.chofer?.nombre
+          }))
+          .filter(p => p.patente) || []
+      }))
+
+      setLineas(lineasProcesadas)
+    } catch (err) { console.error('Error cargando líneas:', err) }
     finally { setLoading(false) }
   }
 
@@ -137,6 +186,48 @@ export default function LineasPage() {
                   {linea.distancia_estimada_km && (
                     <div className="text-xs font-bold text-slate-300">📍 {linea.distancia_estimada_km} km</div>
                   )}
+                </div>
+
+                {/* Sección de Personal Asignado */}
+                <div className="mt-4 pt-4 border-t border-slate-800/60">
+                   <h5 className="text-[10px] uppercase font-black tracking-widest text-slate-500 mb-2">Personal y Flota:</h5>
+                   <div className="flex flex-wrap gap-2">
+                     {linea.personal.length > 0 ? (
+                       linea.personal.map((p, idx) => (
+                        <div key={idx} className="flex items-center gap-2 bg-slate-900/40 border border-slate-800 px-3 py-1.5 rounded-lg">
+                           <span className="material-symbols-outlined text-sm text-lazdin-emerald">local_shipping</span>
+                           <span className="text-xs font-bold text-white uppercase">{p.patente}</span>
+                           <span className="text-xs text-slate-400">—</span>
+                           <span className="text-xs text-slate-300 italic">{p.chofer || 'S/Chofer'}</span>
+                        </div>
+                       ))
+                     ) : (
+                       <span className="text-[10px] text-slate-600 font-bold uppercase tracking-tighter italic">No hay personal asignado actualmente</span>
+                     )}
+                   </div>
+                </div>
+
+                {/* Herramienta de Vinculación Rápida */}
+                <div className="mt-4 pt-3 border-t border-slate-800/40 flex items-center gap-3">
+                   <select 
+                     id={`select-vehiculo-${linea.id}`} 
+                     className="bg-slate-900 border-slate-800 text-[10px] h-8 rounded-lg text-slate-400 focus:text-white transition-all flex-1"
+                   >
+                     <option value="">Vincular Camioneta/Camión...</option>
+                     {todosVehiculos.map(v => (
+                       <option key={v.id} value={v.id}>{v.patente}</option>
+                     ))}
+                   </select>
+                   <button 
+                     onClick={() => {
+                       const sel = document.getElementById(`select-vehiculo-${linea.id}`);
+                       if (sel.value) vincularVehiculo(sel.value, linea.id);
+                     }}
+                     disabled={saving}
+                     className="h-8 px-4 bg-lazdin-emerald/10 text-lazdin-emerald hover:bg-lazdin-emerald hover:text-white border border-lazdin-emerald/30 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all active:scale-95 whitespace-nowrap"
+                   >
+                     VINCULAR
+                   </button>
                 </div>
               </div>
               <div className="flex flex-col items-end gap-3">
