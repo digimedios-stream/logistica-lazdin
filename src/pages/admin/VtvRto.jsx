@@ -45,6 +45,22 @@ export default function VtvRto() {
     setIsEditing(false)
   }
 
+  const eliminarRegistro = async (id) => {
+    if (!confirm('¿Estás SEGURO de eliminar definitivamente este registro de VTV?')) return
+    
+    setSaving(true)
+    try {
+      const { error } = await supabase.from('vtv_rto').delete().eq('id', id)
+      if (error) throw error
+      await cargarDatos()
+      alert('Registro eliminado con éxito')
+    } catch (err) {
+      alert('Error: ' + err.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setSaving(true)
@@ -147,9 +163,14 @@ export default function VtvRto() {
                     <p className="font-bold text-white mt-0.5">{formatFechaCorta(vtv.fecha_vencimiento)}</p>
                   </div>
                   
-                  <button onClick={() => handleEdit(vtv)} className="text-slate-500 hover:text-white transition-colors p-2 bg-slate-800/50 rounded-lg">
-                    <span className="material-symbols-outlined text-sm block">edit</span>
-                  </button>
+                  <div className="flex gap-2">
+                    <button onClick={() => handleEdit(vtv)} className="text-slate-500 hover:text-white transition-colors p-2 bg-slate-800/50 rounded-lg" title="Editar">
+                      <span className="material-symbols-outlined text-sm block">edit</span>
+                    </button>
+                    <button onClick={() => eliminarRegistro(vtv.id)} className="text-slate-600 hover:text-red-400 transition-colors p-2 bg-red-500/5 hover:bg-red-500/10 rounded-lg" title="Eliminar Registro">
+                      <span className="material-symbols-outlined text-sm block">delete</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             )

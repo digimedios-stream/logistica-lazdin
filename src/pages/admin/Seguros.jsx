@@ -45,6 +45,22 @@ export default function Seguros() {
     setIsEditing(false)
   }
 
+  const eliminarRegistro = async (id) => {
+    if (!confirm('¿Estás SEGURO de eliminar definitivamente esta póliza de seguro?')) return
+    
+    setSaving(true)
+    try {
+      const { error } = await supabase.from('seguros').delete().eq('id', id)
+      if (error) throw error
+      await cargarDatos()
+      alert('Póliza eliminada con éxito')
+    } catch (err) {
+      alert('Error: ' + err.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setSaving(true)
@@ -160,9 +176,14 @@ export default function Seguros() {
                     <span className="text-[10px] uppercase font-bold text-red-500 bg-red-500/20 px-3 py-1 rounded-full">Inactivo / Vencida</span>
                   )}
                   
-                  <button onClick={() => handleEdit(seg)} className="text-slate-500 hover:text-white transition-colors p-2 bg-slate-800/50 rounded-lg">
-                    <span className="material-symbols-outlined text-sm block">edit</span>
-                  </button>
+                  <div className="flex gap-2">
+                    <button onClick={() => handleEdit(seg)} className="text-slate-500 hover:text-white transition-colors p-2 bg-slate-800/50 rounded-lg" title="Editar">
+                      <span className="material-symbols-outlined text-sm block">edit</span>
+                    </button>
+                    <button onClick={() => eliminarRegistro(seg.id)} className="text-slate-600 hover:text-red-400 transition-colors p-2 bg-red-500/5 hover:bg-red-500/10 rounded-lg" title="Eliminar Póliza">
+                      <span className="material-symbols-outlined text-sm block">delete</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             )

@@ -30,6 +30,22 @@ export default function Mecanicos() {
     setIsEditing(false)
   }
 
+  const eliminarRegistro = async (id) => {
+    if (!confirm('¿Estás SEGURO de eliminar definitivamente este taller del registro?')) return
+    
+    setSaving(true)
+    try {
+      const { error } = await supabase.from('mecanicos').delete().eq('id', id)
+      if (error) throw error
+      await cargarMecanicos()
+      alert('Taller eliminado con éxito')
+    } catch (err) {
+      alert('Error: ' + err.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setSaving(true)
@@ -111,9 +127,12 @@ export default function Mecanicos() {
                   </div>
                 </div>
               </div>
-              <div className="flex flex-col items-end gap-3">
-                <button onClick={() => handleEdit(mec)} className="text-slate-500 hover:text-white transition-colors p-2">
+              <div className="flex flex-col items-end gap-2">
+                <button onClick={() => handleEdit(mec)} className="p-2 text-slate-500 hover:text-white transition-colors bg-slate-800/30 hover:bg-slate-800 rounded-lg" title="Editar">
                   <span className="material-symbols-outlined text-sm">edit</span>
+                </button>
+                <button onClick={() => eliminarRegistro(mec.id)} className="p-2 text-slate-600 hover:text-red-400 transition-colors bg-red-500/5 hover:bg-red-500/10 rounded-lg" title="Eliminar Registro">
+                  <span className="material-symbols-outlined text-sm">delete</span>
                 </button>
               </div>
             </div>

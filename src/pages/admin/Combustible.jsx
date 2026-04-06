@@ -54,6 +54,46 @@ export default function Combustible() {
     }
   }
 
+  const eliminarCarga = async (carga) => {
+    if (!confirm('¿Estás SEGURO de eliminar este registro de combustible? También se borrarán las fotos asociadas para ahorrar espacio.')) return
+    
+    setSaving(true)
+    try {
+      // 1. Identificar y borrar fotos del Storage si existen
+      const fotosABorrar = []
+      if (carga.foto_url) {
+        const path = carga.foto_url.split('/comprobantes/').pop()
+        if (path) fotosABorrar.push(path)
+      }
+      if (carga.foto_surtidor_url) {
+        const path = carga.foto_surtidor_url.split('/comprobantes/').pop()
+        if (path) fotosABorrar.push(path)
+      }
+
+      if (fotosABorrar.length > 0) {
+        const { error: storageError } = await supabase.storage
+          .from('comprobantes')
+          .remove(fotosABorrar)
+        if (storageError) console.error('Error borrando fotos:', storageError)
+      }
+
+      // 2. Borrar registro de la DB
+      const { error } = await supabase
+        .from('cargas_combustible')
+        .delete()
+        .eq('id', carga.id)
+
+      if (error) throw error
+
+      alert('¡Registro y fotos eliminados correctamente!')
+      await cargarDatos()
+    } catch (err) {
+      alert('Error al eliminar: ' + err.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setSaving(true)
@@ -168,7 +208,7 @@ export default function Combustible() {
                      <th className="px-6 py-4">Litros</th>
                      <th className="px-6 py-4">Total</th>
                      <th className="px-6 py-4">KM</th>
-                     <th className="px-6 py-4">Fotos</th>
+                     <th className="px-6 py-4">Fotos / Admin</th>
                    </tr>
                  </thead>
                  <tbody className="divide-y divide-slate-800">
@@ -196,18 +236,27 @@ export default function Combustible() {
                            {c.odometro_actual} km
                          </td>
                          <td className="px-6 py-4">
-                           <div className="flex gap-2 text-slate-400">
-                             {c.foto_url && (
-                               <a href={c.foto_url} target="_blank" rel="noreferrer" title="Ver Ticket" className="hover:text-lazdin-emerald transition-colors">
-                                 <span className="material-symbols-outlined text-xl">receipt_long</span>
-                               </a>
-                             )}
-                             {c.foto_surtidor_url && (
-                               <a href={c.foto_surtidor_url} target="_blank" rel="noreferrer" title="Ver Surtidor" className="hover:text-amber-500 transition-colors">
-                                 <span className="material-symbols-outlined text-xl">gas_meter</span>
-                               </a>
-                             )}
-                             {!c.foto_url && !c.foto_surtidor_url && <span className="text-slate-700">-</span>}
+                           <div className="flex items-center gap-3">
+                             <div className="flex gap-2 text-slate-400">
+                               {c.foto_url && (
+                                 <a href={c.foto_url} target="_blank" rel="noreferrer" title="Ver Ticket" className="hover:text-lazdin-emerald transition-colors">
+                                   <span className="material-symbols-outlined text-xl">receipt_long</span>
+                                 </a>
+                               )}
+                               {c.foto_surtidor_url && (
+                                 <a href={c.foto_surtidor_url} target="_blank" rel="noreferrer" title="Ver Surtidor" className="hover:text-amber-500 transition-colors">
+                                   <span className="material-symbols-outlined text-xl">gas_meter</span>
+                                 </a>
+                               )}
+                               {!c.foto_url && !c.foto_surtidor_url && <span className="text-slate-700">-</span>}
+                             </div>
+                             <button 
+                               onClick={() => eliminarCarga(c)}
+                               className="p-1.5 text-slate-600 hover:text-red-400 transition-colors rounded-lg hover:bg-red-500/10"
+                               title="Eliminar Registro y Fotos"
+                             >
+                               <span className="material-symbols-outlined text-lg">delete</span>
+                             </button>
                            </div>
                          </td>
                        </tr>

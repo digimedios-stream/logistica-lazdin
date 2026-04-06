@@ -50,6 +50,22 @@ export default function Mantenimientos() {
     setIsEditing(false)
   }
 
+  const eliminarRegistro = async (id) => {
+    if (!confirm('¿Estás SEGURO de eliminar definitivamente este registro de mantenimiento?')) return
+    
+    setSaving(true)
+    try {
+      const { error } = await supabase.from('mantenimientos').delete().eq('id', id)
+      if (error) throw error
+      await cargarDatos()
+      alert('Registro eliminado con éxito')
+    } catch (err) {
+      alert('Error: ' + err.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setSaving(true)
@@ -209,9 +225,12 @@ export default function Mantenimientos() {
                   </div>
                 </div>
 
-                <div className="md:border-l md:border-slate-800 md:pl-4 flex md:flex-col justify-end">
-                  <button onClick={() => handleEdit(mant)} className="text-slate-500 hover:text-white transition-colors p-2 bg-slate-800/50 hover:bg-slate-700 rounded-lg">
+                <div className="md:border-l md:border-slate-800 md:pl-4 flex md:flex-col justify-end gap-2">
+                  <button onClick={() => handleEdit(mant)} className="text-slate-500 hover:text-white transition-colors p-2 bg-slate-800/50 hover:bg-slate-700 rounded-lg" title="Editar">
                     <span className="material-symbols-outlined text-sm block">edit</span>
+                  </button>
+                  <button onClick={() => eliminarRegistro(mant.id)} className="text-slate-600 hover:text-red-400 transition-colors p-2 bg-red-500/5 hover:bg-red-500/10 rounded-lg" title="Eliminar Registro">
+                    <span className="material-symbols-outlined text-sm block">delete</span>
                   </button>
                 </div>
               </div>
