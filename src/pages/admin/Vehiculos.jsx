@@ -13,7 +13,15 @@ export default function Vehiculos() {
 
   async function cargarVehiculos() {
     try {
-      let query = supabase.from('vehiculos').select(`*, linea:lineas(nombre), vtv:vtv_rto(fecha_vencimiento)`).eq('activo', true).order('patente')
+      let query = supabase.from('vehiculos').select(`
+        *, 
+        linea:lineas(nombre), 
+        vtv:vtv_rto(fecha_vencimiento),
+        asignaciones:asignaciones_vehiculo_chofer(
+          activo,
+          chofer:choferes(nombre)
+        )
+      `).eq('activo', true).order('patente')
       const { data } = await query
       setVehiculos(data || [])
     } catch (err) { console.error(err) }
@@ -106,6 +114,7 @@ export default function Vehiculos() {
                 <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Patente</th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Modelo</th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Kilometraje</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Personal Asignado</th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Titularidad</th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Estado VTV</th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-right">Acciones</th>
@@ -114,11 +123,13 @@ export default function Vehiculos() {
             <tbody className="divide-y divide-slate-800">
               {loading ? (
                 Array.from({length:3}).map((_,i) => (
-                  <tr key={i}><td colSpan="7" className="px-6 py-4"><div className="h-10 bg-lazdin-surface-high rounded animate-pulse" /></td></tr>
+                  <tr key={i}><td colSpan="8" className="px-6 py-4"><div className="h-10 bg-lazdin-surface-high rounded animate-pulse" /></td></tr>
                 ))
               ) : filtrados.map(v => {
                 const vtv = v.vtv?.[0]
                 const vtvEstado = vtv ? estadoVencimiento(vtv.fecha_vencimiento) : null
+                const choferesAsignados = v.asignaciones?.filter(a => a.activo).map(a => a.chofer?.nombre) || []
+                
                 return (
                   <tr key={v.id} className="table-row-hover">
                     <td className="px-6 py-4">
@@ -132,6 +143,20 @@ export default function Vehiculos() {
                     <td className="px-6 py-4"><span className="text-sm font-mono bg-slate-800 px-2 py-1 rounded text-slate-300">{formatPatente(v.patente)}</span></td>
                     <td className="px-6 py-4 text-sm text-slate-400">{v.tipo} {v.anio}</td>
                     <td className="px-6 py-4 text-sm">{formatKm(v.kilometraje_actual)}</td>
+                    <td className="px-6 py-4">
+                      {choferesAsignados.length > 0 ? (
+                        <div className="flex flex-col gap-1">
+                          {choferesAsignados.map((nombre, idx) => (
+                            <span key={idx} className="text-xs text-lazdin-emerald font-bold flex items-center gap-1">
+                              <span className="material-symbols-outlined text-[12px]">person</span>
+                              {nombre}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-slate-500 italic">Sin asignar</span>
+                      )}
+                    </td>
                     <td className="px-6 py-4">
                       <span className={v.tipo_propietario === 'propio' ? 'badge-propio' : 'badge-tercero'}>
                         {tipoPropietarioLabel(v.tipo_propietario)}

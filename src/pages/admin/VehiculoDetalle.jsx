@@ -8,7 +8,7 @@ export default function VehiculoDetalle() {
   const navigate = useNavigate()
   
   const [vehiculo, setVehiculo] = useState(null)
-  const [asignacion, setAsignacion] = useState(null)
+  const [asignaciones, setAsignaciones] = useState([]) // plural
   const [vtv, setVtv] = useState(null)
   const [seguro, setSeguro] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -28,15 +28,14 @@ export default function VehiculoDetalle() {
       
       setVehiculo(v)
 
-      // 2. Chofer asignado activo
-      const { data: asign } = await supabase
+      // 2. Choferes asignados activos (PLURAL)
+      const { data: asigns } = await supabase
         .from('asignaciones_vehiculo_chofer')
         .select(`*, chofer:choferes(*)`)
         .eq('vehiculo_id', id)
         .eq('activo', true)
-        .single()
       
-      setAsignacion(asign)
+      setAsignaciones(asigns || [])
 
       // 3. VTV activa
       const { data: vtvs } = await supabase
@@ -128,11 +127,27 @@ export default function VehiculoDetalle() {
                 <p className="text-lg font-bold text-white">{vehiculo.linea?.nombre || 'Scouting'}</p>
               </div>
               <div>
-                <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Chofer Asignado</p>
-                {asignacion?.chofer ? (
-                  <p className="text-sm font-bold text-sky-400">{asignacion.chofer.nombre}</p>
+                <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Personal Asignado</p>
+                {asignaciones.length > 0 ? (
+                  <div className="flex flex-col gap-2 mt-2">
+                    {asignaciones.map((a, idx) => (
+                      <div key={idx} className="flex items-center gap-2 bg-slate-900/50 p-1.5 pr-3 rounded-lg border border-slate-800 w-fit">
+                         <div className="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 overflow-hidden flex-shrink-0 shadow-inner">
+                            {a.chofer?.foto_url ? (
+                              <img src={a.chofer.foto_url} className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="material-symbols-outlined text-[16px] text-slate-500 flex items-center justify-center h-full">person</span>
+                            )}
+                         </div>
+                         <p className="text-xs font-black text-sky-400 uppercase tracking-tight">{a.chofer?.nombre}</p>
+                      </div>
+                    ))}
+                  </div>
                 ) : (
-                  <p className="text-sm font-bold text-slate-500">Sin asignar</p>
+                  <p className="text-xs font-bold text-slate-500 mt-2 italic flex items-center gap-1">
+                    <span className="material-symbols-outlined text-sm">person_off</span>
+                    Sin personal asignado
+                  </p>
                 )}
               </div>
               <div>

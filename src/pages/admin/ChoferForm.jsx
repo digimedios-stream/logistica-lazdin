@@ -119,8 +119,9 @@ export default function ChoferForm() {
 
       if (vehiculoSeleccionadoId) {
         if (!asignacionActual || asignacionActual.vehiculo_id !== vehiculoSeleccionadoId) {
+          // Desactivamos solo la asignación anterior ESTE chofer (si tenía otra)
           await supabase.from('asignaciones_vehiculo_chofer').update({ activo: false, fecha_fin: new Date().toISOString().split('T')[0] }).eq('chofer_id', choferId)
-          await supabase.from('asignaciones_vehiculo_chofer').update({ activo: false, fecha_fin: new Date().toISOString().split('T')[0] }).eq('vehiculo_id', vehiculoSeleccionadoId)
+          // YA NO desactivamos a los otros choferes del mismo vehículo
           await supabase.from('asignaciones_vehiculo_chofer').insert({ vehiculo_id: vehiculoSeleccionadoId, chofer_id: choferId, activo: true })
         }
       } else if (asignacionActual) {
