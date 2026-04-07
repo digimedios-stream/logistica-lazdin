@@ -20,9 +20,9 @@ export default function AdicionalesAdmin() {
   async function cargarDatos() {
     try {
       const [resAdic, resChof, resVeh] = await Promise.all([
-        supabase.from('adicionales').select('*, chofer:choferes(nombre), vehiculo:vehiculos(patente)').order('fecha_inicio', { ascending: false }),
+        supabase.from('adicionales').select('*, chofer:choferes(nombre), vehiculo:vehiculos(marca, modelo, patente)').order('fecha_inicio', { ascending: false }),
         supabase.from('choferes').select('id, nombre').eq('activo', true),
-        supabase.from('vehiculos').select('id, patente').eq('activo', true)
+        supabase.from('vehiculos').select('id, marca, modelo, patente').eq('activo', true)
       ])
       setAdicionales(resAdic.data || [])
       setChoferes(resChof.data || [])
@@ -135,7 +135,7 @@ export default function AdicionalesAdmin() {
                   <label className="text-xs font-bold text-slate-400 uppercase">Vehículo *</label>
                   <select required value={form.vehiculo_id} onChange={e=>setForm({...form, vehiculo_id: e.target.value})} className="form-field mt-1">
                     <option value="">Vehículo...</option>
-                    {vehiculos.map(v => <option key={v.id} value={v.id}>{v.patente}</option>)}
+                    {vehiculos.map(v => <option key={v.id} value={v.id}>{v.marca} {v.modelo} ({v.patente})</option>)}
                   </select>
                 </div>
               </div>
