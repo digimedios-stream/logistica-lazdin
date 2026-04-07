@@ -21,7 +21,7 @@ export default function LineasPage() {
   }, [])
 
   async function cargarVehiculos() {
-    const { data } = await supabase.from('vehiculos').select('id, patente').eq('activo', true).order('patente')
+    const { data } = await supabase.from('vehiculos').select('id, patente, marca, modelo').eq('activo', true).order('patente')
     setTodosVehiculos(data || [])
   }
 
@@ -97,7 +97,8 @@ export default function LineasPage() {
           ?.map(v => ({
             id: v.id,
             patente: v.patente,
-            chofer: v.asignaciones?.find(a => a.activo)?.chofer?.nombre
+            // 👥 Combinamos todos los choferes activos si hay más de uno
+            chofer: v.asignaciones?.filter(a => a.activo).map(a => a.chofer?.nombre).join(' / ') || 'Sin Chofer'
           }))
           .filter(p => p.patente) || []
       }))
@@ -257,7 +258,7 @@ export default function LineasPage() {
                    >
                      <option value="">Vincular Camioneta/Camión...</option>
                      {todosVehiculos.map(v => (
-                       <option key={v.id} value={v.id}>{v.patente}</option>
+                       <option key={v.id} value={v.id}>{v.marca} {v.modelo} ({v.patente})</option>
                      ))}
                    </select>
                    <button 

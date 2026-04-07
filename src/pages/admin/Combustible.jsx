@@ -30,8 +30,8 @@ export default function Combustible() {
   async function cargarDatos() {
     try {
       const [resCargas, resVeh, resChof] = await Promise.all([
-        supabase.from('cargas_combustible').select('*, vehiculo:vehiculos(patente), chofer:choferes(nombre)').order('fecha_hora', { ascending: false }),
-        supabase.from('vehiculos').select('id, patente').eq('activo', true),
+        supabase.from('cargas_combustible').select('*, vehiculo:vehiculos(marca, modelo, patente), chofer:choferes(nombre)').order('fecha_hora', { ascending: false }),
+        supabase.from('vehiculos').select('id, marca, modelo, patente').eq('activo', true),
         supabase.from('choferes').select('id, nombre').eq('activo', true)
       ])
       setCargas(resCargas.data || [])
@@ -142,7 +142,7 @@ export default function Combustible() {
                 <label className="text-xs font-bold text-slate-400 uppercase">Vehículo *</label>
                 <select required value={form.vehiculo_id} onChange={e=>setForm({...form, vehiculo_id: e.target.value})} className="form-field mt-1">
                   <option value="">Seleccionar camión...</option>
-                  {vehiculos.map(v => <option key={v.id} value={v.id}>{v.patente}</option>)}
+                  {vehiculos.map(v => <option key={v.id} value={v.id}>{v.marca} {v.modelo} ({v.patente})</option>)}
                 </select>
               </div>
 
@@ -223,8 +223,8 @@ export default function Combustible() {
                            {formatFechaCorta(c.fecha_hora)}
                          </td>
                          <td className="px-6 py-4">
-                           <div className="font-bold text-white uppercase">{c.vehiculo?.patente || 'S/P'}</div>
-                           <div className="text-[10px] text-slate-500 italic">{c.chofer?.nombre || 'Admin'}</div>
+                           <div className="font-bold text-white uppercase">{c.vehiculo?.marca} {c.vehiculo?.modelo}</div>
+                           <div className="text-[10px] text-slate-500 font-mono italic">({c.vehiculo?.patente || 'S/P'}) — {c.chofer?.nombre || 'Admin'}</div>
                          </td>
                          <td className="px-6 py-4 text-amber-500 font-bold whitespace-nowrap">
                            {c.litros} L
