@@ -58,8 +58,8 @@ export default function Login() {
                 local_shipping
               </span>
             </div>
-            <h1 className="font-headline text-2xl font-black tracking-tighter text-lazdin-on-surface">
-              Logística Lazdin
+            <h1 className="font-headline text-2xl font-black tracking-tighter text-lazdin-on-surface uppercase">
+              Logística
             </h1>
             <p className="text-lazdin-on-surface-variant text-sm mt-1">
               Gestión de Carga Inteligente
