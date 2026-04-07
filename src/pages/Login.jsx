@@ -91,7 +91,7 @@ export default function Login() {
                   className="w-full bg-lazdin-surface-low border border-lazdin-outline-variant rounded-lg py-3 pl-10 pr-4 text-lazdin-on-surface placeholder:text-lazdin-outline focus:outline-none focus:ring-2 focus:ring-lazdin-emerald/50 focus:border-lazdin-emerald transition-all"
                   id="email"
                   type="email"
-                  placeholder="usuario@lazdin.com"
+                  placeholder="usuario@ejemplo.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
