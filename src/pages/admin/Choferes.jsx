@@ -101,11 +101,11 @@ export default function Choferes() {
                   <tr key={c.id} className="table-row-hover">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-slate-800 overflow-hidden flex-shrink-0 flex items-center justify-center border border-slate-700">
-                          {c.foto_perfil_url ? (
-                            <img src={c.foto_perfil_url} alt="" className="w-full h-full object-cover" />
+                        <div className="w-10 h-10 rounded-full bg-slate-800 overflow-hidden flex-shrink-0 flex items-center justify-center border border-slate-700 shadow-inner">
+                          {c.foto_url ? (
+                            <img src={c.foto_url} alt={c.nombre} className="w-full h-full object-cover" />
                           ) : (
-                            <span className="material-symbols-outlined text-slate-500">person</span>
+                            <span className="material-symbols-outlined text-slate-500 text-xl">person</span>
                           )}
                         </div>
                         <div>

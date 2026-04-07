@@ -156,10 +156,14 @@ export default function Usuarios() {
                 <tr key={u.id} className="hover:bg-white/5 transition-colors group">
                   <td className="p-4">
                     <div className="flex items-center gap-4">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border border-white/5 ${u.rol === 'admin' ? 'bg-lazdin-emerald/20 text-lazdin-emerald' : 'bg-slate-800/80 text-slate-500'}`}>
-                        <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>
-                          {u.rol === 'admin' ? 'admin_panel_settings' : 'person_check'}
-                        </span>
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border border-white/5 overflow-hidden ${u.rol === 'admin' ? 'bg-lazdin-emerald/20 text-lazdin-emerald' : 'bg-slate-800/80 text-slate-500'}`}>
+                        {u.foto_url ? (
+                          <img src={u.foto_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>
+                            {u.rol === 'admin' ? 'admin_panel_settings' : 'person_check'}
+                          </span>
+                        )}
                       </div>
                       <div>
                         <div className="font-extrabold text-white text-sm leading-tight group-hover:text-lazdin-emerald transition-colors">
