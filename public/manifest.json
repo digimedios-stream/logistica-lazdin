@@ -1,0 +1,16 @@
+{
+  "short_name": "Logística",
+  "name": "Logística - Gestión de Carga",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#0b1326",
+  "background_color": "#0b1326"
+}
