@@ -11,7 +11,7 @@ const NAV_ITEMS = [
 ]
 
 export default function ChoferLayout() {
-  const { choferData, logout } = useAuth()
+  const { choferData, logout, userRole } = useAuth()
   const { tema, esTercero, nombreMostrar } = useTheme()
   const navigate = useNavigate()
 
@@ -110,6 +110,17 @@ export default function ChoferLayout() {
               </NavLink>
             ))}
           </nav>
+
+          {/* Admin Switch */}
+          {userRole === 'admin' && (
+            <NavLink
+              to="/admin"
+              className="flex items-center gap-3 px-4 py-3 text-lazdin-emerald hover:text-lazdin-emerald-bright hover:bg-lazdin-emerald/10 transition-all rounded-lg w-full mb-2"
+            >
+              <span className="material-symbols-outlined">admin_panel_settings</span>
+              <span className="font-bold text-sm">VISTA ADMIN</span>
+            </NavLink>
+          )}
 
           {/* Logout */}
           <div className="mt-8 pt-4 border-t border-slate-800">

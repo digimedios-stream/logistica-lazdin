@@ -31,7 +31,7 @@ const MOBILE_NAV = [
 ]
 
 export default function AdminLayout() {
-  const { user, logout, adminNombre } = useAuth()
+  const { user, logout, adminNombre, choferData } = useAuth()
   const { tema } = useTheme()
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -109,6 +109,19 @@ export default function AdminLayout() {
 
         {/* Bottom section */}
         <div className="px-3 pt-4 border-t border-slate-800 space-y-1">
+          {choferData && (
+            <NavLink
+              to="/chofer"
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ease-in-out duration-200 group text-amber-400 hover:text-amber-200 hover:bg-amber-500/10 ${!sidebarOpen && 'md:justify-center md:px-2'}`}
+              title={!sidebarOpen ? 'Vista Chofer' : undefined}
+            >
+              <span className="material-symbols-outlined text-[20px]">person_pin_circle</span>
+              {(sidebarOpen || (window.innerWidth < 768)) && (
+                <span className={`text-sm font-bold truncate ${!sidebarOpen && 'md:hidden'}`}>VISTA CHOFER</span>
+              )}
+            </NavLink>
+          )}
+
           <button
             onClick={handleLogout}
             className={`flex items-center gap-3 px-3 py-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all rounded-lg w-full ${!sidebarOpen && 'md:justify-center md:px-2'}`}

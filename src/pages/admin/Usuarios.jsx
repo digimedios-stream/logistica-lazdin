@@ -231,18 +231,18 @@ export default function Usuarios() {
                   <label className="text-[10px] uppercase font-black text-slate-500 mb-1.5 block">Rol de Sistema</label>
                   <div className="grid grid-cols-2 gap-3">
                     <button type="button" onClick={() => setForm({...form, rol: 'chofer'})} className={`py-3 rounded-xl border font-bold text-xs ${form.rol === 'chofer' ? 'bg-blue-500/20 border-blue-500 text-blue-400' : 'bg-slate-900 border-slate-700 text-slate-500'}`}>CHOFER</button>
-                    <button type="button" onClick={() => setForm({...form, rol: 'admin', chofer_id: null})} className={`py-3 rounded-xl border font-bold text-xs ${form.rol === 'admin' ? 'bg-lazdin-emerald/20 border-lazdin-emerald text-lazdin-emerald' : 'bg-slate-900 border-slate-700 text-slate-500'}`}>ADMIN</button>
+                    <button type="button" onClick={() => setForm({...form, rol: 'admin'})} className={`py-3 rounded-xl border font-bold text-xs ${form.rol === 'admin' ? 'bg-lazdin-emerald/20 border-lazdin-emerald text-lazdin-emerald' : 'bg-slate-900 border-slate-700 text-slate-500'}`}>ADMIN</button>
                   </div>
                 </div>
 
-                {form.rol === 'chofer' && (
+                {(form.rol === 'chofer' || form.rol === 'admin') && (
                   <div className="animate-in slide-in-from-top-2 duration-300">
                     <label className="text-[10px] uppercase font-black text-amber-500 mb-1.5 block flex items-center gap-1">
                       <span className="material-symbols-outlined text-sm">link</span>
-                      Chofer Real Asociado (Obligatorio)
+                      {form.rol === 'chofer' ? 'Chofer Real Asociado (Obligatorio)' : 'Vincular Perfil de Chofer (Opcional)'}
                     </label>
                     <select 
-                      required 
+                      required={form.rol === 'chofer'} 
                       value={form.chofer_id || ''} 
                       onChange={e => setForm({...form, chofer_id: e.target.value})}
                       className="w-full bg-slate-900 border border-amber-500/30 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-amber-500/40 outline-none transition-all"

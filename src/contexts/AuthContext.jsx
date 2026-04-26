@@ -71,8 +71,8 @@ export function AuthProvider({ children }) {
         setAdminNombre(roleData.nombre || 'Administrador')
       }
 
-      // 2. Si es chofer, cargar datos adicionales
-      if (roleData.rol === 'chofer' && roleData.chofer_id) {
+      // 2. Si tiene un chofer_id vinculado, cargar sus datos (aunque sea admin)
+      if (roleData.chofer_id) {
         const { data: chofer } = await supabase
           .from('choferes')
           .select('*')

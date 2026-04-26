@@ -54,18 +54,23 @@ function PrivateRoute({ children, requiredRole }) {
   if (!user) return <Navigate to="/login" replace />
   
   if (requiredRole && userRole !== requiredRole) {
-    if (userRole === null) {
-      return (
-        <div className="min-h-screen bg-lazdin-bg flex flex-col items-center justify-center p-6 text-center">
-          <div className="w-16 h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mb-4">
-            <span className="material-symbols-outlined text-3xl">error</span>
+    // Permitir que admins entren a rutas de chofer si es necesario
+    if (userRole === 'admin' && requiredRole === 'chofer') {
+      // Continuar (permitido)
+    } else {
+      if (userRole === null) {
+        return (
+          <div className="min-h-screen bg-lazdin-bg flex flex-col items-center justify-center p-6 text-center">
+            <div className="w-16 h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mb-4">
+              <span className="material-symbols-outlined text-3xl">error</span>
+            </div>
+            <h2 className="text-xl font-bold text-white mb-2">Error de Perfil</h2>
+            <p className="text-slate-400 max-w-sm">No pudimos cargar tu rol de sistema. Verifica tu conexión o contacta a soporte.</p>
           </div>
-          <h2 className="text-xl font-bold text-white mb-2">Error de Perfil</h2>
-          <p className="text-slate-400 max-w-sm">No pudimos cargar tu rol de sistema. Verifica tu conexión o contacta a soporte.</p>
-        </div>
-      )
+        )
+      }
+      return <Navigate to={userRole === 'admin' ? '/admin' : '/chofer'} replace />
     }
-    return <Navigate to={userRole === 'admin' ? '/admin' : '/chofer'} replace />
   }
   return children
 }

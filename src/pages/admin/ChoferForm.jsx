@@ -112,9 +112,15 @@ export default function ChoferForm() {
         const { error: saveError } = await supabase.from('choferes').update(dataToSave).eq('id', choferId)
         if (saveError) throw saveError
       } else {
-        const { data: newChofer, error: saveError } = await supabase.from('choferes').insert(dataToSave).select().single()
+        // Intentamos usar upsert basado en el DNI por si el chofer ya existía (fue eliminado por error)
+        const { data: savedChofer, error: saveError } = await supabase
+          .from('choferes')
+          .upsert({ ...dataToSave, activo: true }, { onConflict: 'dni' })
+          .select()
+          .single()
+          
         if (saveError) throw saveError
-        choferId = newChofer.id
+        choferId = savedChofer.id
       }
 
       if (vehiculoSeleccionadoId) {
