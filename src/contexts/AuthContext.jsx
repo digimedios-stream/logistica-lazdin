@@ -79,7 +79,14 @@ export function AuthProvider({ children }) {
           .eq('id', roleData.chofer_id)
           .maybeSingle()
 
-        if (chofer) setChoferData(chofer)
+        if (chofer) {
+          setChoferData(chofer)
+        } else {
+          setChoferData({
+            id: roleData.chofer_id,
+            nombre: roleData.nombre || 'Chofer'
+          })
+        }
 
         const { data: asignacion } = await supabase
           .from('asignaciones_vehiculo_chofer')
