@@ -120,21 +120,19 @@ export default function Usuarios() {
           })
           .eq('user_id', form.id)
       } else {
-        const { data: newUserRole } = await supabase
-          .from('user_roles')
-          .select('user_id')
-          .eq('nombre', form.nombre)
-          .order('created_at', { ascending: false })
-          .limit(1)
+        const { data: newUser } = await supabase
+          .from('usuarios')
+          .select('id')
+          .eq('email', form.email)
           .maybeSingle()
 
-        if (newUserRole?.user_id) {
+        if (newUser?.id) {
           await supabase
             .from('user_roles')
             .update({
               chofer_id: form.chofer_id || null
             })
-            .eq('user_id', newUserRole.user_id)
+            .eq('user_id', newUser.id)
         }
       }
 
