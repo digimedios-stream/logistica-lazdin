@@ -9,6 +9,7 @@ export default function Usuarios() {
   const [mostrarModal, setMostrarModal] = useState(false)
   const [creandoUsuario, setCreandoUsuario] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
+  const [showPasswordModal, setShowPasswordModal] = useState(false)
   
   const initialState = { id: '', email: '', password: '', nombre: '', rol: 'chofer', chofer_id: '' }
   const [form, setForm] = useState(initialState)
@@ -241,7 +242,7 @@ export default function Usuarios() {
                   <input required type="text" value={form.nombre} onChange={e => setForm({...form, nombre: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-lazdin-emerald/40 outline-none transition-all" />
                 </div>
                 
-                {!isEditing && (
+                 {!isEditing && (
                   <>
                     <div>
                       <label className="text-[10px] uppercase font-black text-slate-500 mb-1.5 block">Email / Usuario</label>
@@ -249,7 +250,26 @@ export default function Usuarios() {
                     </div>
                     <div>
                       <label className="text-[10px] uppercase font-black text-slate-500 mb-1.5 block">Contraseña Inicial</label>
-                      <input required type="password" value={form.password} onChange={e => setForm({...form, password: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-lazdin-emerald/40 outline-none transition-all" minLength={6} />
+                      <div className="relative group">
+                        <input 
+                          required 
+                          type={showPasswordModal ? "text" : "password"} 
+                          value={form.password} 
+                          onChange={e => setForm({...form, password: e.target.value})} 
+                          className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 pr-12 text-white focus:ring-2 focus:ring-lazdin-emerald/40 outline-none transition-all" 
+                          minLength={6} 
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPasswordModal(!showPasswordModal)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
+                          title={showPasswordModal ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                        >
+                          <span className="material-symbols-outlined text-lg leading-none">
+                            {showPasswordModal ? 'visibility_off' : 'visibility'}
+                          </span>
+                        </button>
+                      </div>
                     </div>
                   </>
                 )}

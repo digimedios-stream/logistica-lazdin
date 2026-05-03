@@ -58,6 +58,21 @@ export default function AdminNovedades() {
     }
   }
 
+  async function eliminarNovedad(id) {
+    if (!confirm('¿Estás seguro de eliminar permanentemente esta novedad? Esta acción no se puede deshacer.')) return
+    try {
+      const { error } = await supabase
+        .from('novedades')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw error
+      setNovedades(novedades.filter(n => n.id !== id))
+    } catch (err) {
+      alert('Error al eliminar: ' + err.message)
+    }
+  }
+
   return (
     <div className="space-y-6 animate-in">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -151,7 +166,7 @@ export default function AdminNovedades() {
                       Evidencia
                     </a>
                   )}
-                  <button
+                   <button
                     onClick={() => toggleEstado(nov.id, nov.estado)}
                     className={`w-full lg:w-32 py-2 px-4 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 ${
                       nov.estado === 'abierta'
@@ -164,13 +179,14 @@ export default function AdminNovedades() {
                     </span>
                     {nov.estado === 'abierta' ? 'Abierta' : 'Cerrada'}
                   </button>
-                  
-                  {nov.estado === 'abierta' && (
-                    <button className="hidden lg:flex items-center justify-center gap-2 w-full text-[10px] uppercase font-bold text-slate-500 hover:text-white transition-colors">
-                      <span className="material-symbols-outlined text-sm">mark_as_unread</span>
-                      Marcar Leída
-                    </button>
-                  )}
+
+                  <button
+                    onClick={() => eliminarNovedad(nov.id)}
+                    className="w-full lg:w-32 py-2 px-4 rounded-xl text-xs font-black bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-all flex items-center justify-center gap-2"
+                  >
+                    <span className="material-symbols-outlined text-lg">delete</span>
+                    Eliminar
+                  </button>
                 </div>
               </div>
             </div>

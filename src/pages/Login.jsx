@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 
 export default function Login() {
-  const [email, setEmail] = useState('')
+   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const { login } = useAuth()
@@ -113,15 +114,25 @@ export default function Login() {
                   lock
                 </span>
                 <input
-                  className="w-full bg-lazdin-surface-low border border-lazdin-outline-variant rounded-lg py-3 pl-10 pr-4 text-lazdin-on-surface placeholder:text-lazdin-outline focus:outline-none focus:ring-2 focus:ring-lazdin-emerald/50 focus:border-lazdin-emerald transition-all"
+                  className="w-full bg-lazdin-surface-low border border-lazdin-outline-variant rounded-lg py-3 pl-10 pr-12 text-lazdin-on-surface placeholder:text-lazdin-outline focus:outline-none focus:ring-2 focus:ring-lazdin-emerald/50 focus:border-lazdin-emerald transition-all"
                   id="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   autoComplete="current-password"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-lazdin-on-surface-variant hover:text-lazdin-emerald transition-colors"
+                  title={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                >
+                  <span className="material-symbols-outlined text-lg leading-none">
+                    {showPassword ? 'visibility_off' : 'visibility'}
+                  </span>
+                </button>
               </div>
             </div>
 

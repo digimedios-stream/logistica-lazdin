@@ -37,6 +37,7 @@ Deno.serve(async (req: Request) => {
         user_id: userData.user.id,
         rol: rol,
         nombre: nombre,
+        email: email,
         activo: true
       })
 
