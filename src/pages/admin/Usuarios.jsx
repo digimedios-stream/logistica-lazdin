@@ -109,6 +109,35 @@ export default function Usuarios() {
       if (error) throw error
       if (data?.error) throw new Error(data.error)
 
+      // Actualizar chofer_id directamente en user_roles desde el frontend
+      if (form.id) {
+        await supabase
+          .from('user_roles')
+          .update({
+            rol: form.rol,
+            nombre: form.nombre,
+            chofer_id: form.chofer_id || null
+          })
+          .eq('user_id', form.id)
+      } else {
+        const { data: newUserRole } = await supabase
+          .from('user_roles')
+          .select('user_id')
+          .eq('nombre', form.nombre)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+        if (newUserRole?.user_id) {
+          await supabase
+            .from('user_roles')
+            .update({
+              chofer_id: form.chofer_id || null
+            })
+            .eq('user_id', newUserRole.user_id)
+        }
+      }
+
       alert(isEditing ? '¡Perfil actualizado!' : '¡Usuario creado correctamente!')
       setMostrarModal(false)
       setIsEditing(false)
