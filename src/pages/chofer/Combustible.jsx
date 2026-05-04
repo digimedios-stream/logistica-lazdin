@@ -103,27 +103,7 @@ export default function ChoferCombustible() {
     setError(null)
     
     try {
-      // 1. Subir archivos primero
-      const ticketUrl = await uploadFile(fotoTicket, 'ticket')
-      const surtidorUrl = await uploadFile(fotoSurtidor, 'surtidor')
-
-      // 2. Calcular consumo (opcional, igual que antes)
-      const { data: anterior } = await supabase
-        .from('cargas_combustible')
-        .select('*')
-        .eq('vehiculo_id', vehiculoAsignado.id)
-        .order('fecha_hora', { ascending: false })
-        .limit(1)
-
-      const odometro_anterior = anterior && anterior.length > 0 ? anterior[0].odometro_actual : null
-      
-      let consumo_calculado = null
-      if (odometro_anterior && Number(form.odometro_actual) > Number(odometro_anterior)) {
-        const kms = Number(form.odometro_actual) - Number(odometro_anterior)
-        consumo_calculado = (Number(form.litros) / kms) * 100 
-      }
-
-      // 2.5 Obtener o crear turno_id para pasar el RLS
+      // 1. Obtener o crear turno_id para pasar el RLS (Debe ser lo primero!)
       let turno_id_to_use = turnoActivo?.id || null
       let tempTurnCreated = false
 
@@ -148,6 +128,26 @@ export default function ChoferCombustible() {
           turno_id_to_use = tempTurn.id
           tempTurnCreated = true
         }
+      }
+
+      // 2. Subir archivos (con el turno ya activo en el sistema!)
+      const ticketUrl = await uploadFile(fotoTicket, 'ticket')
+      const surtidorUrl = await uploadFile(fotoSurtidor, 'surtidor')
+
+      // 3. Calcular consumo (opcional, igual que antes)
+      const { data: anterior } = await supabase
+        .from('cargas_combustible')
+        .select('*')
+        .eq('vehiculo_id', vehiculoAsignado.id)
+        .order('fecha_hora', { ascending: false })
+        .limit(1)
+
+      const odometro_anterior = anterior && anterior.length > 0 ? anterior[0].odometro_actual : null
+      
+      let consumo_calculado = null
+      if (odometro_anterior && Number(form.odometro_actual) > Number(odometro_anterior)) {
+        const kms = Number(form.odometro_actual) - Number(odometro_anterior)
+        consumo_calculado = (Number(form.litros) / kms) * 100 
       }
 
       // 3. Insertar registro usando el cliente normal del chofer
