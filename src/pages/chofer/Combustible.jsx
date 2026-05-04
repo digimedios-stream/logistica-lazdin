@@ -122,11 +122,25 @@ export default function ChoferCombustible() {
         consumo_calculado = (Number(form.litros) / kms) * 100 
       }
 
+      // 2.5 Obtener turno_id
+      let turno_id_to_use = turnoActivo?.id || null
+      if (!turno_id_to_use && choferData?.id) {
+        const { data: turns } = await supabase
+          .from('turnos')
+          .select('id')
+          .eq('chofer_id', choferData.id)
+          .order('fecha_inicio', { ascending: false })
+          .limit(1)
+        if (turns && turns.length > 0) {
+          turno_id_to_use = turns[0].id
+        }
+      }
+
       // 3. Insertar registro
       const { error: insError } = await supabase.from('cargas_combustible').insert({
         vehiculo_id: vehiculoAsignado.id,
         chofer_id: choferData.id,
-        turno_id: turnoActivo?.id || null,
+        turno_id: turno_id_to_use,
         litros: Number(form.litros),
         odometro_actual: Number(form.odometro_actual),
         odometro_anterior: odometro_anterior,
@@ -176,21 +190,9 @@ export default function ChoferCombustible() {
       </div>
 
       {!turnoActivo && (
-        <div className="bg-red-500/10 border border-red-500/30 p-5 rounded-2xl mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 border-l-4 border-l-red-500 shadow-2xl">
-          <div className="flex items-start gap-3">
-            <span className="material-symbols-outlined shrink-0 text-red-500 text-2xl mt-0.5">warning</span>
-            <div className="space-y-1">
-              <span className="text-xs font-black uppercase tracking-wider text-red-400 block">Atención</span>
-              <p className="text-[11px] font-medium text-slate-300 max-w-sm">No estás en un turno activo. Para poder registrar cargas de combustible debes iniciar jornada primero, esto asegura la validez de los datos.</p>
-            </div>
-          </div>
-          <button 
-            onClick={() => navigate('/chofer/turno')}
-            type="button"
-            className="w-full sm:w-auto bg-red-600 hover:bg-red-500 text-white font-black text-[10px] tracking-wider uppercase px-4 py-3 rounded-xl transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 whitespace-nowrap shrink-0"
-          >
-            <span className="material-symbols-outlined text-sm font-black">play_arrow</span> Iniciar Turno
-          </button>
+        <div className="bg-amber-500/10 border border-amber-500/40 text-amber-500 p-4 rounded-xl mb-6 text-[10px] uppercase font-black tracking-widest flex items-start gap-3">
+          <span className="material-symbols-outlined shrink-0 text-amber-500">info</span>
+          <span>No estás en un turno activo. La carga se registrará de igual manera.</span>
         </div>
       )}
 
@@ -284,7 +286,7 @@ export default function ChoferCombustible() {
 
           <button 
             type="submit" 
-            disabled={saving || !form.litros || !form.odometro_actual || !turnoActivo} 
+            disabled={saving || !form.litros || !form.odometro_actual} 
             className={`w-full h-16 ${tema.buttonBg} ${tema.buttonHover} ${tema.buttonText} font-black rounded-2xl shadow-2xl active:scale-[0.98] transition-all flex items-center justify-center gap-3 text-lg mt-4 disabled:opacity-30 disabled:cursor-not-allowed`}
           >
             {saving ? (
