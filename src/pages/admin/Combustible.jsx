@@ -8,6 +8,7 @@ export default function Combustible() {
   const [choferes, setChoferes] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [modalImage, setModalImage] = useState(null)
 
   const initialState = { 
     id: null, 
@@ -239,14 +240,14 @@ export default function Combustible() {
                            <div className="flex items-center gap-3">
                              <div className="flex gap-2 text-slate-400">
                                {c.foto_url && (
-                                 <a href={c.foto_url} target="_blank" rel="noreferrer" title="Ver Ticket" className="hover:text-lazdin-emerald transition-colors">
+                                 <button onClick={() => setModalImage(c.foto_url)} title="Ver Ticket" className="hover:text-lazdin-emerald transition-colors">
                                    <span className="material-symbols-outlined text-xl">receipt_long</span>
-                                 </a>
+                                 </button>
                                )}
                                {c.foto_surtidor_url && (
-                                 <a href={c.foto_surtidor_url} target="_blank" rel="noreferrer" title="Ver Surtidor" className="hover:text-amber-500 transition-colors">
+                                 <button onClick={() => setModalImage(c.foto_surtidor_url)} title="Ver Surtidor" className="hover:text-amber-500 transition-colors">
                                    <span className="material-symbols-outlined text-xl">gas_meter</span>
-                                 </a>
+                                 </button>
                                )}
                                {!c.foto_url && !c.foto_surtidor_url && <span className="text-slate-700">-</span>}
                              </div>
@@ -268,6 +269,19 @@ export default function Combustible() {
           </div>
         </div>
       </div>
+
+      {modalImage && (
+        <div className="fixed inset-0 bg-slate-950/80 flex items-center justify-center z-50 p-4 animate-in fade-in" onClick={() => setModalImage(null)}>
+          <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl max-w-lg w-full relative shadow-2xl" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setModalImage(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors bg-slate-800 hover:bg-slate-700 p-2 rounded-full flex">
+              <span className="material-symbols-outlined">close</span>
+            </button>
+            <div className="mt-8 flex justify-center">
+              <img src={modalImage} alt="Comprobante" className="max-h-[70vh] rounded-xl object-contain shadow-inner select-none" />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
