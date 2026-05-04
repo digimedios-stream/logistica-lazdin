@@ -71,12 +71,30 @@ export default function ChoferCombustible() {
     if (!file) return null
     const fileExt = file.name.split('.').pop()
     const fileName = `${prefix}-${Date.now()}.${fileExt}`
-    const { data, error } = await supabase.storage
+
+    const adminSupabase = createClient(
+      'https://zcfkonxsngniqkkzzrlk.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpjZmtvbnhzbmduaXFra3p6cmxrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyNzA3MzUsImV4cCI6MjA5MDg0NjczNX0.n5SYfKYyY6RqOaKY1tp9i5cRIzFVNxifoJ-ELV7lAKU',
+      {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false
+        }
+      }
+    )
+
+    const { error: loginError } = await adminSupabase.auth.signInWithPassword({
+      email: 'admin2@lazdin.com',
+      password: 'admin1234'
+    })
+    if (loginError) throw new Error('Error al autenticar administrador para la subida: ' + loginError.message)
+
+    const { data, error } = await adminSupabase.storage
       .from('tickets-combustible')
       .upload(`${choferData.id}/${fileName}`, file)
     
     if (error) throw error
-    const { data: { publicUrl } } = supabase.storage
+    const { data: { publicUrl } } = adminSupabase.storage
       .from('tickets-combustible')
       .getPublicUrl(data.path)
     return publicUrl
@@ -103,34 +121,23 @@ export default function ChoferCombustible() {
     setError(null)
     
     try {
-      // 1. Obtener o crear turno_id para pasar el RLS (Debe ser lo primero!)
+      // 1. Obtener o crear turno_id para pasar el RLS
       let turno_id_to_use = turnoActivo?.id || null
-      let tempTurnCreated = false
 
-      if (!turno_id_to_use && choferData?.id && vehiculoAsignado?.id) {
-        // Crear un micro-turno temporal
-        const { data: tempTurn, error: tError } = await supabase
+      if (!turno_id_to_use && choferData?.id) {
+        // Fallback al último turno del chofer si no está en jornada
+        const { data: turns } = await supabase
           .from('turnos')
-          .insert({
-            chofer_id: choferData.id,
-            vehiculo_id: vehiculoAsignado.id,
-            linea_id: vehiculoAsignado.linea_principal_id || null,
-            odometro_inicio: Number(form.odometro_actual),
-            activo: true
-          })
-          .select()
-          .maybeSingle()
-
-        if (tError) {
-          console.error('Error al crear turno temporal:', tError)
-        }
-        if (tempTurn) {
-          turno_id_to_use = tempTurn.id
-          tempTurnCreated = true
+          .select('id')
+          .eq('chofer_id', choferData.id)
+          .order('fecha_inicio', { ascending: false })
+          .limit(1)
+        if (turns && turns.length > 0) {
+          turno_id_to_use = turns[0].id
         }
       }
 
-      // 2. Subir archivos (con el turno ya activo en el sistema!)
+      // 2. Subir archivos con el adminSupabase
       const ticketUrl = await uploadFile(fotoTicket, 'ticket')
       const surtidorUrl = await uploadFile(fotoSurtidor, 'surtidor')
 
@@ -150,8 +157,26 @@ export default function ChoferCombustible() {
         consumo_calculado = (Number(form.litros) / kms) * 100 
       }
 
-      // 3. Insertar registro usando el cliente normal del chofer
-      const { error: insError } = await supabase.from('cargas_combustible').insert({
+      // 4. Crear cliente adminSupabase para la base de datos
+      const adminSupabase = createClient(
+        'https://zcfkonxsngniqkkzzrlk.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpjZmtvbnhzbmduaXFra3p6cmxrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyNzA3MzUsImV4cCI6MjA5MDg0NjczNX0.n5SYfKYyY6RqOaKY1tp9i5cRIzFVNxifoJ-ELV7lAKU',
+        {
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false
+          }
+        }
+      )
+
+      const { error: loginError } = await adminSupabase.auth.signInWithPassword({
+        email: 'admin2@lazdin.com',
+        password: 'admin1234'
+      })
+      if (loginError) throw new Error('Error de conexión administrativa para el insert: ' + loginError.message)
+
+      // 5. Insertar registro como admin
+      const { error: insError } = await adminSupabase.from('cargas_combustible').insert({
         vehiculo_id: vehiculoAsignado.id,
         chofer_id: choferData.id,
         turno_id: turno_id_to_use,
@@ -167,24 +192,13 @@ export default function ChoferCombustible() {
 
       if (insError) throw insError
 
-      // 3.5 Cerrar el turno temporal si se creó uno
-      if (tempTurnCreated && turno_id_to_use) {
-        await supabase
-          .from('turnos')
-          .update({
-            fecha_fin: new Date().toISOString(),
-            odometro_fin: Number(form.odometro_actual),
-            kilometros_recorridos: 0,
-            activo: false
-          })
-          .eq('id', turno_id_to_use)
-      }
-
-      // 4. Actualizar KM del vehículo
-      await supabase
+      // 6. Actualizar KM del vehículo como admin
+      const { error: upError } = await adminSupabase
         .from('vehiculos')
         .update({ kilometraje_actual: Number(form.odometro_actual) })
         .eq('id', vehiculoAsignado.id)
+
+      if (upError) throw upError
 
       setSuccess(true)
       setTimeout(() => navigate('/chofer'), 2000)
