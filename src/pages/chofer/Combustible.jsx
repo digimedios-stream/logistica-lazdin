@@ -190,7 +190,8 @@ export default function ChoferCombustible() {
       setTimeout(() => navigate('/chofer'), 2000)
 
     } catch (err) {
-      setError(err.message)
+      console.error('Error completo:', err)
+      setError(err.message + (err.details ? ' - ' + err.details : ''))
       setSaving(false)
     }
   }
