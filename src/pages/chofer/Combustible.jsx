@@ -67,37 +67,40 @@ export default function ChoferCombustible() {
     }
   }
 
-  async function uploadFile(file, prefix) {
-    if (!file) return null
-    const fileExt = file.name.split('.').pop()
-    const fileName = `${prefix}-${Date.now()}.${fileExt}`
-
-    const adminSupabase = createClient(
-      'https://zcfkonxsngniqkkzzrlk.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpjZmtvbnhzbmduaXFra3p6cmxrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyNzA3MzUsImV4cCI6MjA5MDg0NjczNX0.n5SYfKYyY6RqOaKY1tp9i5cRIzFVNxifoJ-ELV7lAKU',
-      {
-        auth: {
-          persistSession: false,
-          autoRefreshToken: false
+  const compressImageToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.readAsDataURL(file)
+      reader.onload = (event) => {
+        const img = new Image()
+        img.src = event.target.result
+        img.onload = () => {
+          const canvas = document.createElement('canvas')
+          let width = img.width
+          let height = img.height
+          const max_size = 800
+          if (width > height) {
+            if (width > max_size) {
+              height *= max_size / width
+              width = max_size
+            }
+          } else {
+            if (height > max_size) {
+              width *= max_size / height
+              height = max_size
+            }
+          }
+          canvas.width = width
+          canvas.height = height
+          const ctx = canvas.getContext('2d')
+          ctx.drawImage(img, 0, 0, width, height)
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.7)
+          resolve(dataUrl)
         }
+        img.onerror = (err) => reject(err)
       }
-    )
-
-    const { error: loginError } = await adminSupabase.auth.signInWithPassword({
-      email: 'admin2@lazdin.com',
-      password: 'admin1234'
+      reader.onerror = (err) => reject(err)
     })
-    if (loginError) throw new Error('Error al autenticar administrador para la subida: ' + loginError.message)
-
-    const { data, error } = await adminSupabase.storage
-      .from('tickets-combustible')
-      .upload(`${choferData.id}/${fileName}`, file)
-    
-    if (error) throw error
-    const { data: { publicUrl } } = adminSupabase.storage
-      .from('tickets-combustible')
-      .getPublicUrl(data.path)
-    return publicUrl
   }
 
   const handleSubmit = async (e) => {
@@ -137,9 +140,9 @@ export default function ChoferCombustible() {
         }
       }
 
-      // 2. Subir archivos con el adminSupabase
-      const ticketUrl = await uploadFile(fotoTicket, 'ticket')
-      const surtidorUrl = await uploadFile(fotoSurtidor, 'surtidor')
+      // 2. Comprimir y convertir las fotos a Base64 directamente
+      const ticketUrl = await compressImageToBase64(fotoTicket)
+      const surtidorUrl = await compressImageToBase64(fotoSurtidor)
 
       // 3. Calcular consumo (opcional, igual que antes)
       const { data: anterior } = await supabase
