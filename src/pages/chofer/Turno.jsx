@@ -47,15 +47,17 @@ export default function ChoferTurno() {
 
   async function cargarTurno() {
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('turnos')
         .select('*')
         .eq('chofer_id', choferData.id)
         .eq('activo', true)
-        .single()
+        .order('fecha_inicio', { ascending: false })
       
-      if (data) {
-        setTurnoActivo(data)
+      if (error) throw error
+
+      if (data && data.length > 0) {
+        setTurnoActivo(data[0])
       } else {
         // Pre-fill odómetro con el kilometraje del vehículo si no hay turno
         if (vehiculoAsignado?.kilometraje_actual) {
@@ -63,10 +65,7 @@ export default function ChoferTurno() {
         }
       }
     } catch (err) {
-      // Si no hay turno activo, tirará un error que ignoramos
-      if (err.code !== 'PGRST116') {
-        console.error(err)
-      }
+      console.error(err)
     } finally {
       setLoading(false)
     }
@@ -98,7 +97,8 @@ export default function ChoferTurno() {
             kilometros_recorridos: kmRecorridos,
             activo: false
           })
-          .eq('id', turnoActivo.id)
+          .eq('chofer_id', choferData.id)
+          .eq('activo', true)
         
         if (updError) throw updError
 

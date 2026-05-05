@@ -32,7 +32,7 @@ const MOBILE_NAV = [
 
 export default function AdminLayout() {
   const { user, logout, adminNombre, choferData } = useAuth()
-  const { tema } = useTheme()
+  const { tema, modoClaro, toggleTemaClaroOscuro } = useTheme()
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -53,7 +53,7 @@ export default function AdminLayout() {
       )}
 
       {/* Sidebar — Desktop & Mobile */}
-      <aside className={`fixed left-0 top-0 h-screen bg-[#0f172a] border-r border-slate-800 shadow-xl flex flex-col py-4 z-50 transition-all duration-300 
+      <aside className={`fixed left-0 top-0 h-screen bg-slate-900 border-r border-slate-800 shadow-xl flex flex-col py-4 z-50 transition-all duration-300 
         ${sidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full md:translate-x-0 md:w-20'} 
         ${!sidebarOpen && 'md:flex'}`}
       >
@@ -158,6 +158,13 @@ export default function AdminLayout() {
         </div>
 
         <div className="flex items-center gap-2">
+          <button 
+            onClick={toggleTemaClaroOscuro}
+            className="p-2 text-slate-400 hover:bg-slate-800/50 hover:text-white transition-colors rounded-full active:scale-95 flex items-center justify-center"
+            title={modoClaro ? "Modo oscuro" : "Modo claro"}
+          >
+            <span className="material-symbols-outlined">{modoClaro ? 'dark_mode' : 'light_mode'}</span>
+          </button>
           <button className="p-2 text-slate-400 hover:bg-slate-800/50 hover:text-white transition-colors rounded-full active:scale-95">
             <span className="material-symbols-outlined">notifications</span>
           </button>

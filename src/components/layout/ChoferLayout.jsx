@@ -8,11 +8,12 @@ const NAV_ITEMS = [
   { to: '/chofer/combustible', icon: 'local_gas_station', label: 'Combustible' },
   { to: '/chofer/novedades', icon: 'report', label: 'Novedades' },
   { to: '/chofer/adicionales', icon: 'add_task', label: 'Adicionales' },
+  { to: '/chofer/mantenimientos', icon: 'build', label: 'Mantenimientos' },
 ]
 
 export default function ChoferLayout() {
   const { choferData, logout, userRole } = useAuth()
-  const { tema, esTercero, nombreMostrar } = useTheme()
+  const { tema, esTercero, nombreMostrar, modoClaro, toggleTemaClaroOscuro } = useTheme()
   const navigate = useNavigate()
 
   const handleLogout = async () => {
@@ -44,6 +45,13 @@ export default function ChoferLayout() {
           </div>
 
           <div className="flex items-center gap-2">
+            <button 
+              onClick={toggleTemaClaroOscuro}
+              className="p-2 text-slate-400 hover:bg-slate-800 transition-colors active:scale-95 duration-150 rounded-full flex items-center justify-center"
+              title={modoClaro ? "Modo oscuro" : "Modo claro"}
+            >
+              <span className="material-symbols-outlined">{modoClaro ? 'dark_mode' : 'light_mode'}</span>
+            </button>
             <button className="p-2 text-slate-400 hover:bg-slate-800 transition-colors active:scale-95 duration-150 rounded-full">
               <span className="material-symbols-outlined">notifications</span>
             </button>

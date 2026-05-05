@@ -4,6 +4,46 @@
 
 @layer base {
   :root {
+    /* Default: Dark mode */
+    --slate-50: 248 250 252;
+    --slate-100: 241 245 249;
+    --slate-200: 226 232 240;
+    --slate-300: 203 213 225;
+    --slate-400: 148 163 184;
+    --slate-500: 100 116 139;
+    --slate-600: 71 85 105;
+    --slate-700: 51 65 85;
+    --slate-800: 30 41 59;
+    --slate-900: 15 23 42;
+    --slate-950: 2 6 23;
+    --white: 255 255 255;
+    --black: 0 0 0;
+
+    /* Lazdin dark */
+    --lazdin-bg: 11 19 38;
+    --lazdin-surface: 23 31 51;
+    --lazdin-surface-high: 34 42 61;
+    --lazdin-surface-highest: 45 52 73;
+    --lazdin-surface-low: 19 27 46;
+    --lazdin-surface-lowest: 6 14 32;
+    --lazdin-primary-container: 30 41 59;
+    --lazdin-emerald: 78 222 163;
+    --lazdin-emerald-dark: 0 48 30;
+    --lazdin-emerald-container: 0 82 54;
+    --lazdin-blue: 165 202 244;
+    --lazdin-blue-container: 34 73 109;
+    --lazdin-orange: 249 115 22;
+    --lazdin-orange-light: 251 146 60;
+    --lazdin-orange-dark: 194 65 12;
+    --lazdin-outline: 143 144 151;
+    --lazdin-outline-variant: 69 71 76;
+    --lazdin-on-surface: 218 226 253;
+    --lazdin-on-surface-variant: 197 198 205;
+    --lazdin-on-primary-container: 133 144 166;
+    --lazdin-error: 255 180 171;
+    --lazdin-error-container: 147 0 10;
+
+    /* Tailwind Base */
     --background: 222 56% 10%;
     --foreground: 226 90% 93%;
     --card: 223 38% 14%;
@@ -24,6 +64,57 @@
     --input: 225 7% 28%;
     --ring: 164 65% 59%;
     --radius: 0.5rem;
+  }
+
+  :root[data-theme="light"] {
+    /* Light mode */
+    --slate-50: 15 23 42;
+    --slate-100: 30 41 59;
+    --slate-200: 51 65 85;
+    --slate-300: 71 85 105;
+    --slate-400: 100 116 139;
+    --slate-500: 148 163 184;
+    --slate-600: 203 213 225;
+    --slate-700: 226 232 240;
+    --slate-800: 241 245 249;
+    --slate-900: 248 250 252;
+    --slate-950: 255 255 255;
+    --white: 15 23 42;
+    --black: 255 255 255;
+    
+    /* Lazdin light */
+    --lazdin-bg: 248 250 252;
+    --lazdin-surface: 255 255 255;
+    --lazdin-surface-high: 241 245 249;
+    --lazdin-surface-highest: 226 232 240;
+    --lazdin-surface-low: 255 255 255;
+    --lazdin-surface-lowest: 255 255 255;
+    --lazdin-primary-container: 226 232 240;
+    --lazdin-emerald: 16 185 129;
+    --lazdin-emerald-dark: 209 250 229;
+    --lazdin-emerald-container: 167 243 208;
+    --lazdin-blue: 59 130 246;
+    --lazdin-blue-container: 219 234 254;
+    --lazdin-orange: 249 115 22;
+    --lazdin-orange-light: 234 88 12;
+    --lazdin-orange-dark: 255 237 213;
+    --lazdin-outline: 148 163 184;
+    --lazdin-outline-variant: 203 213 225;
+    --lazdin-on-surface: 15 23 42;
+    --lazdin-on-surface-variant: 71 85 105;
+    --lazdin-on-primary-container: 51 65 85;
+    --lazdin-error: 239 68 68;
+    --lazdin-error-container: 254 226 226;
+
+    /* Tailwind Base Light */
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
   }
 }
 

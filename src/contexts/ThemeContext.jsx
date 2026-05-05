@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo } from 'react'
+import { createContext, useContext, useMemo, useState, useEffect } from 'react'
 import { useAuth } from './AuthContext'
 
 const ThemeContext = createContext({})
@@ -12,7 +12,7 @@ const TEMAS = {
     accentColor: '#4edea3',        // emerald
     accentColorHover: '#6ffbbe',
     accentBg: 'bg-emerald-500/10',
-    accentText: 'text-emerald-400',
+    accentText: 'text-lazdin-emerald',
     accentBorder: 'border-emerald-500',
     headerBorder: 'border-t-emerald-500',
     buttonBg: 'bg-emerald-500',
@@ -20,7 +20,7 @@ const TEMAS = {
     buttonText: 'text-slate-900',
     badgeVehiculo: null, // No mostrar badge para propios
     showLogo: true,
-    sidebarActive: 'bg-emerald-500/10 text-emerald-400 border-r-2 border-emerald-500',
+    sidebarActive: 'bg-emerald-500/10 text-lazdin-emerald border-r-2 border-emerald-500',
     cardHighlight: 'border-l-emerald-500',
     gradientFrom: 'from-emerald-600',
     gradientTo: 'to-emerald-800',
@@ -30,7 +30,7 @@ const TEMAS = {
     accentColor: '#f97316',        // orange
     accentColorHover: '#fb923c',
     accentBg: 'bg-orange-500/10',
-    accentText: 'text-orange-400',
+    accentText: 'text-lazdin-orange',
     accentBorder: 'border-orange-500',
     headerBorder: 'border-t-orange-600',
     buttonBg: 'bg-orange-600',
@@ -38,7 +38,7 @@ const TEMAS = {
     buttonText: 'text-white',
     badgeVehiculo: 'Vehículo de Cliente',
     showLogo: false,
-    sidebarActive: 'bg-orange-500/10 text-orange-400 border-r-2 border-orange-500',
+    sidebarActive: 'bg-orange-500/10 text-lazdin-orange border-r-2 border-orange-500',
     cardHighlight: 'border-l-orange-500',
     gradientFrom: 'from-orange-600',
     gradientTo: 'to-orange-800',
@@ -48,7 +48,7 @@ const TEMAS = {
     accentColor: '#4edea3',
     accentColorHover: '#6ffbbe',
     accentBg: 'bg-emerald-500/10',
-    accentText: 'text-emerald-400',
+    accentText: 'text-lazdin-emerald',
     accentBorder: 'border-emerald-500',
     headerBorder: 'border-transparent',
     buttonBg: 'bg-emerald-500',
@@ -56,7 +56,7 @@ const TEMAS = {
     buttonText: 'text-slate-900',
     badgeVehiculo: null,
     showLogo: true,
-    sidebarActive: 'bg-emerald-500/10 text-emerald-400 border-r-2 border-emerald-500',
+    sidebarActive: 'bg-emerald-500/10 text-lazdin-emerald border-r-2 border-emerald-500',
     cardHighlight: 'border-l-emerald-500',
     gradientFrom: 'from-emerald-600',
     gradientTo: 'to-emerald-800',
@@ -65,6 +65,27 @@ const TEMAS = {
 
 export function ThemeProvider({ children }) {
   const { isAdmin, isChofer, esTercero, propietarioNombre } = useAuth()
+  
+  // Estado para modo claro/oscuro
+  const [modoClaro, setModoClaro] = useState(() => {
+    const guardado = localStorage.getItem('modoClaro')
+    return guardado === 'true'
+  })
+
+  // Efecto para aplicar la clase/atributo al HTML
+  useEffect(() => {
+    const root = window.document.documentElement
+    if (modoClaro) {
+      root.setAttribute('data-theme', 'light')
+      root.classList.remove('dark')
+    } else {
+      root.removeAttribute('data-theme')
+      root.classList.add('dark')
+    }
+    localStorage.setItem('modoClaro', modoClaro)
+  }, [modoClaro])
+
+  const toggleTemaClaroOscuro = () => setModoClaro(!modoClaro)
 
   const tema = useMemo(() => {
     if (isAdmin) return TEMAS.admin
@@ -89,6 +110,8 @@ export function ThemeProvider({ children }) {
     esTercero,
     nombreMostrar: tema.nombre,
     showLogo: tema.showLogo,
+    modoClaro,
+    toggleTemaClaroOscuro,
   }
 
   return (

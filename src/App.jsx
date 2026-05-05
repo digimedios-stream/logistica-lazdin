@@ -33,6 +33,7 @@ import ChoferTurno from '@/pages/chofer/Turno'
 import ChoferCombustible from '@/pages/chofer/Combustible'
 import ChoferNovedades from '@/pages/chofer/Novedades'
 import ChoferAdicionales from '@/pages/chofer/Adicionales'
+import ChoferMantenimientos from '@/pages/chofer/Mantenimientos'
 
 // Loading spinner
 function LoadingScreen() {
@@ -135,6 +136,7 @@ export default function App() {
         <Route path="combustible" element={<ChoferCombustible />} />
         <Route path="novedades" element={<ChoferNovedades />} />
         <Route path="adicionales" element={<ChoferAdicionales />} />
+        <Route path="mantenimientos" element={<ChoferMantenimientos />} />
       </Route>
 
       {/* Default redirect */}
