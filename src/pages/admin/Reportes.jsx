@@ -33,11 +33,14 @@ export default function Reportes() {
       let dateFilter = new Date()
       if (periodo === 'mes_actual') {
         dateFilter.setDate(1) // Start of month
+        dateFilter.setHours(0, 0, 0, 0)
       } else if (periodo === 'mes_anterior') {
         dateFilter.setMonth(dateFilter.getMonth() - 1)
         dateFilter.setDate(1)
+        dateFilter.setHours(0, 0, 0, 0)
       } else if (periodo === 'trimestre') {
         dateFilter.setMonth(dateFilter.getMonth() - 3)
+        dateFilter.setHours(0, 0, 0, 0)
       } else {
         dateFilter.setFullYear(2000) // All time
       }
@@ -47,8 +50,12 @@ export default function Reportes() {
       const [resComb, resMant, resTurnos] = await Promise.all([
         supabase.from('cargas_combustible').select('fecha_hora, precio_total, vehiculo:vehiculos(patente)').gte('fecha_hora', isoDate),
         supabase.from('mantenimientos').select('fecha, costo, tipo, vehiculo:vehiculos(patente)').gte('fecha', isoDate),
-        supabase.from('turnos').select('km_inicio, km_fin').gte('fecha_inicio', isoDate).not('km_fin', 'is', null)
+        supabase.from('turnos').select('fecha_inicio, odometro_inicio, odometro_fin, kilometros_recorridos, fecha_fin').gte('fecha_inicio', isoDate).not('fecha_fin', 'is', null)
       ])
+
+      if (resComb.error) throw resComb.error
+      if (resMant.error) throw resMant.error
+      if (resTurnos.error) throw resTurnos.error
 
       const comb = resComb.data || []
       const mant = resMant.data || []
@@ -57,19 +64,19 @@ export default function Reportes() {
       // KPIs
       const tComb = comb.reduce((acc, curr) => acc + Number(curr.precio_total || 0), 0)
       const tMant = mant.reduce((acc, curr) => acc + Number(curr.costo || 0), 0)
-      const km = turnos.reduce((acc, curr) => acc + ((curr.km_fin || 0) - (curr.km_inicio || 0)), 0)
+      const km = turnos.reduce((acc, curr) => acc + Number(curr.kilometros_recorridos || 0), 0)
       setKpis({ totalCombustible: tComb, totalMantenimiento: tMant, viajesRealizados: turnos.length, kmRecorridos: km })
 
       // Chart 1: Gastos por dia (Area Chart)
       // Group by date
       const gastosMap = {}
       comb.forEach(c => {
-        const d = c.fecha_hora.split('T')[0]
+        const d = c.fecha_hora ? c.fecha_hora.split('T')[0] : 'Sin fecha'
         if (!gastosMap[d]) gastosMap[d] = { fecha: d, Combustible: 0, Mantenimiento: 0 }
         gastosMap[d].Combustible += Number(c.precio_total || 0)
       })
       mant.forEach(m => {
-        const d = m.fecha.split('T')[0]
+        const d = m.fecha ? m.fecha.split('T')[0] : 'Sin fecha'
         if (!gastosMap[d]) gastosMap[d] = { fecha: d, Combustible: 0, Mantenimiento: 0 }
         gastosMap[d].Mantenimiento += Number(m.costo || 0)
       })
@@ -83,7 +90,7 @@ export default function Reportes() {
       comb.forEach(c => {
         const pat = c.vehiculo ? c.vehiculo.patente : 'N/A'
         if (!vMap[pat]) vMap[pat] = 0
-        vMap[pat] += Number(c.importe)
+        vMap[pat] += Number(c.precio_total || 0)
       })
       const chartVeh = Object.keys(vMap).map(k => ({ patente: k, importe: vMap[k] })).sort((a,b) => b.importe - a.importe).slice(0, 10) // Top 10
       setVehiculosConsumo(chartVeh.length ? chartVeh : [{ patente: 'Sin datos', importe: 0 }])

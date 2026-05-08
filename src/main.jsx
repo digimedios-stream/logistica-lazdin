@@ -6,6 +6,17 @@ import { AuthProvider } from './contexts/AuthContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import './index.css'
 
+// Sistema de recuperación anti pantalla blanca por actualización de versión
+window.addEventListener('vite:preloadError', () => {
+  window.location.reload(true)
+})
+
+window.addEventListener('error', (e) => {
+  if (e.message && e.message.includes('Failed to fetch dynamically imported module')) {
+    window.location.reload(true)
+  }
+})
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <BrowserRouter>
     <AuthProvider>

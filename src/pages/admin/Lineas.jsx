@@ -11,7 +11,7 @@ export default function LineasPage() {
 
   const initialState = {
     id: null, nombre: '', descripcion: '', distancia_estimada_km: '',
-    horario_salida: '', horario_regreso: '', remuneracion_base: ''
+    horario_salida: '', horario_regreso: '', remuneracion_base: '', activo: true
   }
   const [form, setForm] = useState(initialState)
 
@@ -72,6 +72,20 @@ export default function LineasPage() {
     }
   }
 
+  async function toggleLineaActivo(linea) {
+    setSaving(true)
+    try {
+      const nuevoEstado = linea.activo !== false ? false : true
+      const { error } = await supabase.from('lineas').update({ activo: nuevoEstado }).eq('id', linea.id)
+      if (error) throw error
+      await cargarLineas()
+    } catch (err) {
+      alert('Error al cambiar estado: ' + err.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
   async function cargarLineas() {
     try {
       const { data } = await supabase
@@ -86,22 +100,45 @@ export default function LineasPage() {
               activo,
               chofer:choferes(nombre)
             )
+          ),
+          turnos:turnos (
+            id,
+            activo,
+            fecha_inicio,
+            fecha_fin,
+            chofer:choferes (
+              nombre
+            ),
+            vehiculo:vehiculos (
+              patente
+            )
           )
         `)
         .order('nombre')
       
-      // Filtrar solo asignaciones activas para cada vehículo
-      const lineasProcesadas = (data || []).map(l => ({
-        ...l,
-        personal: l.vehiculos
-          ?.map(v => ({
-            id: v.id,
-            patente: v.patente,
-            // 👥 Combinamos todos los choferes activos si hay más de uno
-            chofer: v.asignaciones?.filter(a => a.activo).map(a => a.chofer?.nombre).join(' / ') || 'Sin Chofer'
-          }))
-          .filter(p => p.patente) || []
-      }))
+      // Filtrar solo asignaciones activas para cada vehículo y procesar turnos
+      const lineasProcesadas = (data || []).map(l => {
+        const turnoActivo = l.turnos?.find(t => t.activo === true)
+        
+        const turnosFinalizados = l.turnos
+          ?.filter(t => !t.activo && t.fecha_fin)
+          .sort((a, b) => new Date(b.fecha_fin) - new Date(a.fecha_fin))
+        const ultimoTurno = turnosFinalizados && turnosFinalizados.length > 0 ? turnosFinalizados[0] : null
+
+        return {
+          ...l,
+          turnoActivo,
+          ultimoTurno,
+          personal: l.vehiculos
+            ?.map(v => ({
+              id: v.id,
+              patente: v.patente,
+              // 👥 Combinamos todos los choferes activos si hay más de uno
+              chofer: v.asignaciones?.filter(a => a.activo).map(a => a.chofer?.nombre).join(' / ') || 'Sin Chofer'
+            }))
+            .filter(p => p.patente) || []
+        }
+      })
 
       setLineas(lineasProcesadas)
     } catch (err) { console.error('Error cargando líneas:', err) }
@@ -193,6 +230,16 @@ export default function LineasPage() {
                   <input type="number" value={form.remuneracion_base} onChange={e=>setForm({...form, remuneracion_base: e.target.value})} className="form-field" />
                 </div>
               </div>
+              <div className="flex items-center gap-2.5 pt-2">
+                <input 
+                  type="checkbox" 
+                  id="activo" 
+                  checked={form.activo !== false} 
+                  onChange={e=>setForm({...form, activo: e.target.checked})} 
+                  className="w-4 h-4 rounded border-slate-700 bg-slate-900 text-lazdin-emerald focus:ring-lazdin-emerald focus:ring-offset-slate-900 cursor-pointer" 
+                />
+                <label htmlFor="activo" className="text-xs font-bold text-slate-300 uppercase select-none cursor-pointer">Línea Activa</label>
+              </div>
             </div>
             <div className="mt-6 flex gap-3">
               {isEditing && <button type="button" onClick={handleCancel} className="btn-secondary flex-1">Cancelar</button>}
@@ -205,11 +252,49 @@ export default function LineasPage() {
           {loading ? (
              <div className="p-8 text-center text-slate-500">Cargando...</div>
           ) : lineas.map(linea => (
-            <div key={linea.id} className="bg-lazdin-surface border border-slate-800 rounded-xl p-5 shadow-lg flex justify-between items-center hover:border-slate-600 transition-colors">
+            <div 
+              key={linea.id} 
+              className={`bg-lazdin-surface border ${linea.turnoActivo ? 'border-emerald-500/30 border-l-4 border-l-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.05)]' : linea.ultimoTurno ? 'border-slate-800 border-l-4 border-l-slate-500' : 'border-slate-800 border-l-4 border-l-slate-700/60 opacity-80'} rounded-xl p-5 shadow-lg flex justify-between items-center hover:border-slate-600 transition-colors`}
+            >
               <div>
-                <h4 className="font-black text-lg text-white flex items-center gap-2">
+                <h4 className="font-black text-lg text-white flex flex-wrap items-center gap-2.5">
                   <span className="material-symbols-outlined text-lazdin-emerald">route</span>
-                  {linea.nombre}
+                  <span>{linea.nombre}</span>
+                  
+                  {/* Real-time Turno Badge */}
+                  {linea.turnoActivo ? (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 animate-pulse">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#10b981]"></span>
+                      En Recorrido
+                    </span>
+                  ) : linea.ultimoTurno ? (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-800 text-slate-400 border border-slate-700">
+                      <span className="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
+                      Completado
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-900 text-slate-600 border border-slate-800">
+                      Sin Actividad
+                    </span>
+                  )}
+
+                  {/* Route Status Toggle Badge */}
+                  <button 
+                    onClick={() => toggleLineaActivo(linea)}
+                    disabled={saving}
+                    title={linea.activo !== false ? 'Desactivar Línea (Habilitada en el sistema)' : 'Activar Línea (Deshabilitada en el sistema)'}
+                    className="transition-all hover:scale-105 active:scale-95 inline-flex ml-auto md:ml-0"
+                  >
+                    {linea.activo !== false ? (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-slate-800 text-slate-300 border border-slate-700/50 hover:bg-slate-700/50">
+                        Habilitada
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20">
+                        Deshabilitada
+                      </span>
+                    )}
+                  </button>
                 </h4>
                 <p className="text-sm text-slate-400 mt-1">{linea.descripcion}</p>
                 <div className="flex items-center gap-4 mt-3">
@@ -220,6 +305,75 @@ export default function LineasPage() {
                   )}
                   {linea.distancia_estimada_km && (
                     <div className="text-xs font-bold text-slate-300">📍 {linea.distancia_estimada_km} km</div>
+                  )}
+                </div>
+
+                {/* Visual indicator of Real-time activity */}
+                <div className={`mt-4 p-4 rounded-xl border ${linea.turnoActivo ? 'bg-emerald-500/[0.02] border-emerald-500/25 shadow-[0_0_15px_rgba(16,185,129,0.05)]' : 'bg-slate-900/40 border-slate-800/80'} transition-all max-w-md`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <h5 className="text-[10px] uppercase font-black tracking-widest text-slate-500 flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[12px]">monitoring</span>
+                      Estado de Recorrido
+                    </h5>
+                    {linea.turnoActivo ? (
+                      <span className="text-[9px] font-black text-emerald-400 uppercase tracking-wider flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                        ACTIVO AHORA
+                      </span>
+                    ) : linea.ultimoTurno ? (
+                      <span className="text-[9px] font-black text-slate-500 uppercase tracking-wider">
+                        ÚLTIMO VIAJE FINALIZADO
+                      </span>
+                    ) : (
+                      <span className="text-[9px] font-black text-slate-600 uppercase tracking-wider">
+                        SIN REGISTROS
+                      </span>
+                    )}
+                  </div>
+
+                  {linea.turnoActivo ? (
+                    <div className="space-y-1.5">
+                      <div className="flex flex-wrap items-center gap-2 text-sm text-white font-bold">
+                        <span className="material-symbols-outlined text-emerald-400 text-base">person_pin</span>
+                        <span>{linea.turnoActivo.chofer?.nombre || 'Chofer'}</span>
+                        <span className="text-slate-600">•</span>
+                        <span className="flex items-center gap-1 text-[11px] bg-slate-800 text-slate-300 font-mono px-2 py-0.5 rounded border border-slate-700">
+                          <span className="material-symbols-outlined text-xs text-lazdin-emerald">local_shipping</span>
+                          {linea.turnoActivo.vehiculo?.patente || 'Sin Patente'}
+                        </span>
+                      </div>
+                      <div className="text-xs text-slate-400 flex flex-wrap items-center gap-1">
+                        <span className="material-symbols-outlined text-xs text-emerald-400">play_circle</span>
+                        <span>Comenzó el recorrido a las:</span>
+                        <span className="font-bold text-slate-200">{new Date(linea.turnoActivo.fecha_inicio).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} hs</span>
+                        <span className="text-slate-600">•</span>
+                        <span className="text-slate-400">{new Date(linea.turnoActivo.fecha_inicio).toLocaleDateString([], {day: '2-digit', month: '2-digit'})}</span>
+                      </div>
+                    </div>
+                  ) : linea.ultimoTurno ? (
+                    <div className="space-y-1.5">
+                      <div className="flex flex-wrap items-center gap-2 text-sm text-slate-400">
+                        <span className="material-symbols-outlined text-slate-600 text-base">account_circle</span>
+                        <span className="font-medium text-slate-300">{linea.ultimoTurno.chofer?.nombre || 'Chofer'}</span>
+                        <span className="text-slate-700">•</span>
+                        <span className="flex items-center gap-1 text-[11px] bg-slate-900/50 text-slate-400 font-mono px-1.5 py-0.5 rounded border border-slate-800/80">
+                          <span className="material-symbols-outlined text-xs text-slate-500">local_shipping</span>
+                          {linea.ultimoTurno.vehiculo?.patente || 'Sin Patente'}
+                        </span>
+                      </div>
+                      <div className="text-xs text-slate-500 flex flex-wrap items-center gap-1">
+                        <span className="material-symbols-outlined text-xs text-slate-600">check_circle</span>
+                        <span>Completó el recorrido a las:</span>
+                        <span className="font-semibold text-slate-400">{new Date(linea.ultimoTurno.fecha_fin).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} hs</span>
+                        <span className="text-slate-700">•</span>
+                        <span className="text-slate-500">{new Date(linea.ultimoTurno.fecha_fin).toLocaleDateString([], {day: '2-digit', month: '2-digit'})}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-xs text-slate-600 italic pt-1">
+                      <span className="material-symbols-outlined text-[14px]">info</span>
+                      <span>No se registran turnos o recorridos para esta ruta.</span>
+                    </div>
                   )}
                 </div>
 
