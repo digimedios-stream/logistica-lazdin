@@ -27,3 +27,6 @@ yarn-error.log*
 
 # stitch reference designs (not needed in production)
 stitch logística/
+
+# temporary diagnostic scripts
+scratch/
