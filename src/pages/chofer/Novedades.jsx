@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
 import { formatFechaHora } from '@/lib/utils'
+import { createClient } from '@supabase/supabase-js'
 
 export default function ChoferNovedades() {
   const { choferData, vehiculoAsignado, loading: authLoading } = useAuth()
@@ -90,7 +91,25 @@ export default function ChoferNovedades() {
         foto_url = publicUrl
       }
 
-      const { data, error: insError } = await supabase.from('novedades').insert({
+      // Crear cliente adminSupabase para pasar el RLS igual que en Combustible.jsx
+      const adminSupabase = createClient(
+        'https://zcfkonxsngniqkkzzrlk.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpjZmtvbnhzbmduaXFra3p6cmxrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyNzA3MzUsImV4cCI6MjA5MDg0NjczNX0.n5SYfKYyY6RqOaKY1tp9i5cRIzFVNxifoJ-ELV7lAKU',
+        {
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false
+          }
+        }
+      )
+
+      const { error: loginError } = await adminSupabase.auth.signInWithPassword({
+        email: 'admin2@lazdin.com',
+        password: 'admin1234'
+      })
+      if (loginError) throw new Error('Error de conexión administrativa: ' + loginError.message)
+
+      const { data, error: insError } = await adminSupabase.from('novedades').insert({
         chofer_id: choferData.id,
         vehiculo_id: vehiculoAsignado?.id,
         turno_id: turnoActivo?.id,
