@@ -11,6 +11,7 @@ export default function VehiculoForm() {
   const [saving, setSaving] = useState(false)
   const [lineas, setLineas] = useState([])
   const [error, setError] = useState(null)
+  const [asignaciones, setAsignaciones] = useState([])
 
   const [form, setForm] = useState({
     patente: '', marca: '', modelo: '', anio: new Date().getFullYear(),
@@ -50,11 +51,40 @@ export default function VehiculoForm() {
             contrato_vencimiento: vehiculo.contrato_vencimiento || ''
           })
         }
+
+        // Cargar choferes asignados activos
+        const { data: asigns } = await supabase
+          .from('asignaciones_vehiculo_chofer')
+          .select(`*, chofer:choferes(id, nombre)`)
+          .eq('vehiculo_id', id)
+          .eq('activo', true)
+        
+        setAsignaciones(asigns || [])
       }
     } catch (err) {
       setError(err.message)
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function desvincularChofer(asignacionId) {
+    if (!confirm('¿Estás seguro de desvincular a este chofer de este vehículo?')) return
+    try {
+      const { error } = await supabase
+        .from('asignaciones_vehiculo_chofer')
+        .update({ 
+          activo: false, 
+          fecha_fin: new Date().toISOString().split('T')[0] 
+        })
+        .eq('id', asignacionId)
+      
+      if (error) throw error
+      
+      // Filtramos la asignación desvinculada del estado
+      setAsignaciones(asignaciones.filter(a => a.id !== asignacionId))
+    } catch (err) {
+      alert('Error al desvincular chofer: ' + err.message)
     }
   }
 
@@ -236,6 +266,46 @@ export default function VehiculoForm() {
             </div>
           </div>
         </div>
+
+        {/* Personal Asignado (Solo en Edición) */}
+        {isEditing && (
+          <div className="bg-lazdin-surface border border-slate-800 rounded-xl p-6">
+            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+              <span className="material-symbols-outlined text-sky-400">group</span>
+              Personal Asignado (Choferes a Cargo)
+            </h3>
+            {asignaciones.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {asignaciones.map((a, idx) => (
+                  <div key={idx} className="flex items-center justify-between bg-slate-900/50 p-3.5 rounded-xl border border-slate-800 hover:border-slate-700 transition-all">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700">
+                        <span className="material-symbols-outlined text-slate-400 text-lg">person</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-white uppercase">{a.chofer?.nombre}</p>
+                        <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Conductor Asignado</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => desvincularChofer(a.id)}
+                      className="p-2 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white rounded-lg transition-all flex items-center justify-center active:scale-95"
+                      title="Desvincular chofer"
+                    >
+                      <span className="material-symbols-outlined text-sm">person_remove</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-slate-500 italic flex items-center gap-2">
+                <span className="material-symbols-outlined text-base">person_off</span>
+                No hay ningún chofer asignado a esta unidad actualmente.
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Titularidad */}
         <div className="bg-lazdin-surface border border-slate-800 rounded-xl p-6">
