@@ -41,6 +41,17 @@ export default function Choferes() {
         .eq('id', id)
       
       if (error) throw error
+
+      // Desactivamos automáticamente la asignación de vehículo activa para este chofer
+      await supabase
+        .from('asignaciones_vehiculo_chofer')
+        .update({ 
+          activo: false, 
+          fecha_fin: new Date().toISOString().split('T')[0] 
+        })
+        .eq('chofer_id', id)
+        .eq('activo', true)
+
       await cargarChoferes()
     } catch (err) {
       alert('Error: ' + err.message)
