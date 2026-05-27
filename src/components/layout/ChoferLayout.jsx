@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -15,6 +16,7 @@ export default function ChoferLayout() {
   const { choferData, logout, userRole } = useAuth()
   const { tema, esTercero, nombreMostrar, modoClaro, toggleTemaClaroOscuro } = useTheme()
   const navigate = useNavigate()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const handleLogout = async () => {
     await logout()
@@ -23,10 +25,26 @@ export default function ChoferLayout() {
 
   return (
     <div className="min-h-screen bg-lazdin-bg">
+      {/* Overlay para móvil */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-[60] md:hidden animate-in fade-in duration-300"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Header con branding dinámico */}
       <header className={`fixed top-0 w-full z-50 bg-slate-900/95 backdrop-blur-md shadow-lg border-b border-slate-800 ${esTercero ? 'border-t-4 border-t-orange-600' : ''}`}>
         <div className="flex items-center justify-between px-4 sm:px-6 h-16 w-full">
           <div className="flex items-center gap-3">
+            {/* Botón hamburguesa para móvil */}
+            <button 
+              onClick={() => setSidebarOpen(true)}
+              className="md:hidden p-2 -ml-2 text-slate-400 hover:text-white active:scale-95 transition-all rounded-lg"
+              aria-label="Abrir menú"
+            >
+              <span className="material-symbols-outlined">menu</span>
+            </button>
             {/* Logo solo para propios */}
             {tema.showLogo && (
               <div className="w-8 h-8 bg-lazdin-primary-container rounded-lg flex items-center justify-center border border-lazdin-outline-variant/20">
@@ -81,8 +99,21 @@ export default function ChoferLayout() {
       </header>
 
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col fixed left-0 top-0 h-full z-40 bg-slate-950 w-64 border-r border-slate-800">
-        <div className="p-6 mt-16">
+      {/* Sidebar — Escritorio y Cajón Móvil */}
+      <aside className={`fixed left-0 top-0 h-full bg-slate-950 w-64 border-r border-slate-800 flex flex-col transition-transform duration-300
+        ${sidebarOpen ? 'translate-x-0 z-[70] shadow-2xl' : '-translate-x-full md:translate-x-0 z-40'}
+      `}>
+        <div className="p-6 h-full flex flex-col overflow-y-auto custom-scrollbar md:mt-16">
+          {/* Cabecera Móvil del Sidebar */}
+          <div className="md:hidden flex items-center justify-between mb-8 -mt-2">
+            <span className={`text-lg font-black ${esTercero ? 'text-slate-200' : 'text-lazdin-emerald'}`}>Menú Principal</span>
+            <button 
+              onClick={() => setSidebarOpen(false)} 
+              className="p-2 bg-slate-800 text-slate-400 rounded-full active:scale-90 transition-all"
+            >
+              <span className="material-symbols-outlined text-[20px]">close</span>
+            </button>
+          </div>
           {/* Driver profile */}
           <div className="flex items-center gap-3 mb-8">
             <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center overflow-hidden border border-slate-700">
@@ -105,6 +136,7 @@ export default function ChoferLayout() {
                 key={item.to}
                 to={item.to}
                 end={item.end}
+                onClick={() => setSidebarOpen(false)}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                     isActive
@@ -123,6 +155,7 @@ export default function ChoferLayout() {
           {userRole === 'admin' && (
             <NavLink
               to="/admin"
+              onClick={() => setSidebarOpen(false)}
               className="flex items-center gap-3 px-4 py-3 text-lazdin-emerald hover:text-lazdin-emerald-bright hover:bg-lazdin-emerald/10 transition-all rounded-lg w-full mb-2"
             >
               <span className="material-symbols-outlined">admin_panel_settings</span>
@@ -160,7 +193,7 @@ export default function ChoferLayout() {
 
       {/* Mobile Bottom Nav */}
       <nav className="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-2 py-2 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 shadow-[0_-4px_10px_rgba(0,0,0,0.3)]">
-        {NAV_ITEMS.map((item) => (
+        {NAV_ITEMS.slice(0, 4).map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
@@ -177,6 +210,15 @@ export default function ChoferLayout() {
             <span>{item.label}</span>
           </NavLink>
         ))}
+
+        {/* Botón Menú (Activa el sidebar) */}
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className={`flex flex-col items-center justify-center px-3 py-1 rounded-xl transition-all text-[11px] font-medium ${sidebarOpen ? `${tema.accentText} ${tema.accentBg}` : 'text-slate-500'}`}
+        >
+          <span className="material-symbols-outlined mb-0.5 text-[22px]">menu</span>
+          <span>Menú</span>
+        </button>
       </nav>
     </div>
   )

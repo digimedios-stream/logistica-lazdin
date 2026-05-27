@@ -95,6 +95,26 @@ export default function Combustible() {
     }
   }
 
+  const handleEdit = (carga) => {
+    setForm({
+      id: carga.id,
+      vehiculo_id: carga.vehiculo_id || '',
+      chofer_id: carga.chofer_id || '',
+      fecha_hora: carga.fecha_hora ? new Date(carga.fecha_hora).toISOString().substring(0, 16) : new Date().toISOString().substring(0, 16),
+      litros: carga.litros || '',
+      precio_por_litro: carga.precio_por_litro || '',
+      precio_total: carga.precio_total || '',
+      odometro_actual: carga.odometro_actual || '',
+      estacion: carga.estacion || '',
+      tipo_combustible: carga.tipo_combustible || 'Gasoil'
+    })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const handleCancel = () => {
+    setForm(initialState)
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setSaving(true)
@@ -103,18 +123,26 @@ export default function Combustible() {
         vehiculo_id: form.vehiculo_id,
         chofer_id: form.chofer_id || null,
         fecha_hora: new Date(form.fecha_hora).toISOString(),
-        litros: parseFloat(form.litros),
-        precio_por_litro: parseFloat(form.precio_por_litro),
-        precio_total: parseFloat(form.precio_total),
-        odometro_actual: parseFloat(form.odometro_actual),
+        litros: form.litros ? parseFloat(form.litros) : null,
+        precio_por_litro: form.precio_por_litro ? parseFloat(form.precio_por_litro) : null,
+        precio_total: form.precio_total ? parseFloat(form.precio_total) : null,
+        odometro_actual: form.odometro_actual ? parseFloat(form.odometro_actual) : null,
         estacion: form.estacion,
         tipo_combustible: form.tipo_combustible
       }
 
-      const { error } = await supabase.from('cargas_combustible').insert(payload)
+      let error
+      if (form.id) {
+        const { error: err } = await supabase.from('cargas_combustible').update(payload).eq('id', form.id)
+        error = err
+      } else {
+        const { error: err } = await supabase.from('cargas_combustible').insert(payload)
+        error = err
+      }
+
       if (error) throw error
       
-      alert('Carga registrada correctamente!')
+      alert(form.id ? '¡Carga actualizada correctamente!' : '¡Carga registrada correctamente!')
       setForm(initialState)
       await cargarDatos()
     } catch (err) {
@@ -134,9 +162,9 @@ export default function Combustible() {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className="xl:col-span-1">
           <form onSubmit={handleSubmit} className="bg-lazdin-surface border border-slate-800 rounded-xl p-6 shadow-xl sticky top-6">
-            <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-amber-500">
-              <span className="material-symbols-outlined">local_gas_station</span>
-              Nueva Carga
+            <h3 className={`text-lg font-bold mb-4 flex items-center gap-2 ${form.id ? 'text-sky-500' : 'text-amber-500'}`}>
+              <span className="material-symbols-outlined">{form.id ? 'edit_note' : 'local_gas_station'}</span>
+              {form.id ? 'Editar Carga' : 'Nueva Carga'}
             </h3>
             <div className="space-y-4">
               <div>
@@ -187,9 +215,14 @@ export default function Combustible() {
               </div>
             </div>
 
-            <div className="mt-6 flex gap-3">
-              <button type="submit" disabled={saving || !form.vehiculo_id || !form.litros} className="btn-primary flex-1">
-                {saving ? 'Guardando...' : 'Registrar Carga'}
+            <div className="mt-6 flex flex-col sm:flex-row gap-3">
+              {form.id && (
+                <button type="button" onClick={handleCancel} className="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 rounded-lg transition-all text-center text-sm">
+                  Cancelar
+                </button>
+              )}
+              <button type="submit" disabled={saving || !form.vehiculo_id || !form.litros} className={`flex-1 py-2.5 font-bold rounded-lg transition-all shadow-lg active:scale-95 text-sm ${form.id ? 'bg-sky-600 hover:bg-sky-500 text-white' : 'btn-primary'}`}>
+                {saving ? 'Guardando...' : form.id ? 'Guardar Cambios' : 'Registrar Carga'}
               </button>
             </div>
           </form>
@@ -251,6 +284,13 @@ export default function Combustible() {
                                )}
                                {!c.foto_url && !c.foto_surtidor_url && <span className="text-slate-700">-</span>}
                              </div>
+                             <button 
+                               onClick={() => handleEdit(c)}
+                               className="p-1.5 text-slate-600 hover:text-sky-400 transition-colors rounded-lg hover:bg-sky-500/10"
+                               title="Editar Carga"
+                             >
+                               <span className="material-symbols-outlined text-lg">edit</span>
+                             </button>
                              <button 
                                onClick={() => eliminarCarga(c)}
                                className="p-1.5 text-slate-600 hover:text-red-400 transition-colors rounded-lg hover:bg-red-500/10"

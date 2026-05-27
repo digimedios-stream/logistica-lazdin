@@ -94,6 +94,21 @@ export default function Mantenimientos() {
     }
   }
 
+  const groupedMantenimientos = Object.values(
+    mantenimientos.reduce((acc, mant) => {
+      const vId = mant.vehiculo_id || 'desconocido'
+      if (!acc[vId]) {
+        acc[vId] = {
+          id: vId,
+          vehiculo: mant.vehiculo || { marca: 'Desconocido', modelo: '', patente: 'S/P' },
+          mants: []
+        }
+      }
+      acc[vId].mants.push(mant)
+      return acc
+    }, {})
+  ).sort((a, b) => a.vehiculo.marca.localeCompare(b.vehiculo.marca))
+
   return (
     <div className="space-y-6 animate-in">
       <div>
@@ -179,60 +194,77 @@ export default function Mantenimientos() {
             <div className="p-8 text-center text-slate-500">Cargando...</div>
           ) : mantenimientos.length === 0 ? (
             <div className="p-8 text-center text-slate-500 bg-slate-800/30 rounded-xl">No hay mantenimientos cargados.</div>
-          ) : mantenimientos.map(mant => (
-            <div key={mant.id} className="bg-lazdin-surface border border-slate-800 rounded-xl overflow-hidden shadow-lg hover:border-slate-600 transition-colors">
-              <div className="p-5 flex flex-col md:flex-row gap-4">
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 border ${mant.tipo === 'preventivo' ? 'bg-sky-500/10 border-sky-500/30 text-sky-400' : mant.tipo === 'cubiertas' ? 'bg-purple-500/10 border-purple-500/30 text-purple-400' : 'bg-red-500/10 border-red-500/30 text-red-500'}`}>
-                  <span className="material-symbols-outlined">{mant.tipo === 'preventivo' ? 'build' : mant.tipo === 'correctivo' ? 'car_crash' : 'tire_repair'}</span>
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-wrap items-center gap-2 mb-2">
-                    <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${mant.estado === 'completado' ? 'bg-lazdin-emerald/20 text-lazdin-emerald border border-lazdin-emerald/30' : mant.estado === 'programado' ? 'bg-sky-500/20 text-sky-400 border border-sky-500/30' : mant.estado === 'en_curso' ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30' : 'bg-red-500/20 text-red-500 border border-red-500/30'}`}>
-                      {mant.estado}
-                    </span>
-                    <span className="text-xs text-slate-400 font-medium bg-slate-800 px-2 py-0.5 rounded capitalize">{mant.tipo}</span>
-                    <span className="text-xs text-slate-500 font-mono ml-auto">{formatFechaCorta(mant.fecha)}</span>
+          ) : groupedMantenimientos.map(group => (
+            <div key={group.id} className="space-y-4 mb-8">
+              {/* Agrupamiento por Vehículo */}
+              <div className="flex items-center justify-between bg-slate-900/60 border border-slate-800 p-3 rounded-xl shadow-md sticky top-24 z-10 backdrop-blur-md">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 bg-amber-500/10 rounded-lg flex items-center justify-center border border-amber-500/20 text-amber-500">
+                    <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>local_shipping</span>
                   </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white uppercase tracking-tight">{group.vehiculo.marca} {group.vehiculo.modelo}</h3>
+                    <span className="font-mono text-[10px] bg-black/40 text-slate-400 px-2 rounded border border-slate-800">{group.vehiculo.patente}</span>
+                  </div>
+                </div>
+                <div className="text-right px-2">
+                  <div className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Registros</div>
+                  <div className="text-lg font-mono font-black text-white leading-none">{group.mants.length}</div>
+                </div>
+              </div>
 
-                  {mant.vehiculo && (
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-mono bg-slate-800 border border-slate-700 px-2 rounded text-slate-300 text-xs">{mant.vehiculo.patente}</span>
-                      <span className="font-bold text-white text-sm">{mant.vehiculo.marca} {mant.vehiculo.modelo}</span>
+              {/* Lista de mantenimientos del vehículo */}
+              <div className="space-y-3 pl-3 md:pl-5 border-l-2 border-slate-800/40 ml-4 md:ml-5">
+                {group.mants.map(mant => (
+                  <div key={mant.id} className="bg-lazdin-surface border border-slate-800/80 rounded-xl overflow-hidden shadow-sm hover:border-slate-600 transition-colors">
+                    <div className="p-4 flex flex-col md:flex-row gap-4">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 border ${mant.tipo === 'preventivo' ? 'bg-sky-500/10 border-sky-500/30 text-sky-400' : mant.tipo === 'cubiertas' ? 'bg-purple-500/10 border-purple-500/30 text-purple-400' : 'bg-red-500/10 border-red-500/30 text-red-500'}`}>
+                        <span className="material-symbols-outlined text-lg">{mant.tipo === 'preventivo' ? 'build' : mant.tipo === 'correctivo' ? 'car_crash' : 'tire_repair'}</span>
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                          <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${mant.estado === 'completado' ? 'bg-lazdin-emerald/20 text-lazdin-emerald border border-lazdin-emerald/30' : mant.estado === 'programado' ? 'bg-sky-500/20 text-sky-400 border border-sky-500/30' : mant.estado === 'en_curso' ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30' : 'bg-red-500/20 text-red-500 border border-red-500/30'}`}>
+                            {mant.estado}
+                          </span>
+                          <span className="text-xs text-slate-400 font-medium bg-slate-800 px-2 py-0.5 rounded capitalize">{mant.tipo}</span>
+                          <span className="text-xs text-slate-500 font-mono ml-auto">{formatFechaCorta(mant.fecha)}</span>
+                        </div>
+
+                        <p className="text-sm text-slate-300 mb-3">{mant.descripcion}</p>
+
+                        <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 p-2.5 bg-slate-900/50 rounded-lg border border-slate-800/50">
+                          {mant.mecanico && (
+                            <div className="flex items-center gap-1" title="Taller">
+                              <span className="material-symbols-outlined text-[14px]">storefront</span>
+                              <span className="font-medium">{mant.mecanico.nombre}</span>
+                            </div>
+                          )}
+                          {(mant.kilometraje || mant.proximo_km) && (
+                            <div className="flex items-center gap-1" title="Odómetro">
+                              <span className="material-symbols-outlined text-[14px]">speed</span>
+                              <span>{mant.kilometraje ? `${mant.kilometraje}km` : '-'} {mant.proximo_km ? `➔ Próx: ${mant.proximo_km}km` : ''}</span>
+                            </div>
+                          )}
+                          {mant.costo > 0 && (
+                            <div className="flex items-center gap-1 text-red-400 font-bold ml-auto">
+                              {formatMoneda(mant.costo)}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="md:border-l md:border-slate-800 md:pl-3 flex md:flex-col justify-end gap-2 shrink-0">
+                        <button onClick={() => handleEdit(mant)} className="text-slate-500 hover:text-white transition-colors p-1.5 bg-slate-800/50 hover:bg-slate-700 rounded-lg" title="Editar">
+                          <span className="material-symbols-outlined text-sm block">edit</span>
+                        </button>
+                        <button onClick={() => eliminarRegistro(mant.id)} className="text-slate-600 hover:text-red-400 transition-colors p-1.5 bg-red-500/5 hover:bg-red-500/10 rounded-lg" title="Eliminar Registro">
+                          <span className="material-symbols-outlined text-sm block">delete</span>
+                        </button>
+                      </div>
                     </div>
-                  )}
-
-                  <p className="text-sm text-slate-300 mb-3">{mant.descripcion}</p>
-
-                  <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 p-3 bg-slate-900/50 rounded-lg">
-                    {mant.mecanico && (
-                      <div className="flex items-center gap-1" title="Taller">
-                        <span className="material-symbols-outlined text-[14px]">storefront</span>
-                        <span className="font-medium">{mant.mecanico.nombre}</span>
-                      </div>
-                    )}
-                    {(mant.kilometraje || mant.proximo_km) && (
-                      <div className="flex items-center gap-1" title="Odómetro">
-                        <span className="material-symbols-outlined text-[14px]">speed</span>
-                        <span>{mant.kilometraje ? `${mant.kilometraje}km` : '-'} {mant.proximo_km ? `➔ Próx: ${mant.proximo_km}km` : ''}</span>
-                      </div>
-                    )}
-                    {mant.costo > 0 && (
-                      <div className="flex items-center gap-1 text-red-400 font-bold ml-auto">
-                        {formatMoneda(mant.costo)}
-                      </div>
-                    )}
                   </div>
-                </div>
-
-                <div className="md:border-l md:border-slate-800 md:pl-4 flex md:flex-col justify-end gap-2">
-                  <button onClick={() => handleEdit(mant)} className="text-slate-500 hover:text-white transition-colors p-2 bg-slate-800/50 hover:bg-slate-700 rounded-lg" title="Editar">
-                    <span className="material-symbols-outlined text-sm block">edit</span>
-                  </button>
-                  <button onClick={() => eliminarRegistro(mant.id)} className="text-slate-600 hover:text-red-400 transition-colors p-2 bg-red-500/5 hover:bg-red-500/10 rounded-lg" title="Eliminar Registro">
-                    <span className="material-symbols-outlined text-sm block">delete</span>
-                  </button>
-                </div>
+                ))}
               </div>
             </div>
           ))}
