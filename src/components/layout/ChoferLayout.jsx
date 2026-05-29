@@ -24,7 +24,7 @@ export default function ChoferLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-lazdin-bg">
+    <div className="min-h-screen bg-lazdin-bg flex flex-col">
       {/* Overlay para móvil */}
       {sidebarOpen && (
         <div 
@@ -177,12 +177,12 @@ export default function ChoferLayout() {
       </aside>
 
       {/* Main content */}
-      <main className="pt-20 pb-24 md:pb-8 px-4 md:px-8 md:ml-64 max-w-7xl mx-auto">
+      <main className="flex-1 pt-20 pb-8 px-4 md:px-8 md:ml-64 max-w-7xl mx-auto w-full">
         <Outlet />
       </main>
 
       {/* Footer */}
-      <footer className="md:ml-64 mt-auto py-8 border-t border-slate-800/50">
+      <footer className="md:ml-64 mt-auto pt-8 pb-28 md:pb-8 border-t border-slate-800/50 w-full">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
           <span className="text-xs text-slate-500 italic">
             {esTercero ? 'Operando como Tercero Autorizado' : 'Logística Lazdin'}
