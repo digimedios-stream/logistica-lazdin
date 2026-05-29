@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
+import PWAInstallPrompt from '@/components/PWAInstallPrompt'
 
 // Layouts
 import AdminLayout from '@/components/layout/AdminLayout'
@@ -82,65 +83,68 @@ export default function App() {
   if (loading) return <LoadingScreen />
 
   return (
-    <Routes>
-      {/* Login */}
-      <Route
-        path="/login"
-        element={user && userRole ? <Navigate to={userRole === 'admin' ? '/admin' : '/chofer'} replace /> : <Login />}
-      />
+    <>
+      <PWAInstallPrompt />
+      <Routes>
+        {/* Login */}
+        <Route
+          path="/login"
+          element={user && userRole ? <Navigate to={userRole === 'admin' ? '/admin' : '/chofer'} replace /> : <Login />}
+        />
 
-      {/* Admin routes */}
-      <Route
-        path="/admin"
-        element={
-          <PrivateRoute requiredRole="admin">
-            <AdminLayout />
-          </PrivateRoute>
-        }
-      >
-        <Route index element={<AdminDashboard />} />
-        <Route path="vehiculos" element={<Vehiculos />} />
-        <Route path="vehiculos/nuevo" element={<VehiculoForm />} />
-        <Route path="vehiculos/:id/editar" element={<VehiculoForm />} />
-        <Route path="vehiculos/:id" element={<VehiculoDetalle />} />
-        <Route path="choferes" element={<Choferes />} />
-        <Route path="choferes/nuevo" element={<ChoferForm />} />
-        <Route path="choferes/:id/editar" element={<ChoferForm />} />
-        <Route path="combustible" element={<Combustible />} />
-        <Route path="mantenimientos" element={<Mantenimientos />} />
-        <Route path="seguros" element={<Seguros />} />
-        <Route path="multas" element={<Multas />} />
-        <Route path="lineas" element={<LineasPage />} />
-        <Route path="adicionales" element={<Adicionales />} />
-        <Route path="mecanicos" element={<Mecanicos />} />
-        <Route path="vtv" element={<VtvRto />} />
-        <Route path="reportes" element={<Reportes />} />
-        <Route path="logs" element={<LogsActividad />} />
-        <Route path="usuarios" element={<Usuarios />} />
-        <Route path="liquidaciones" element={<Liquidaciones />} />
-        <Route path="documentos" element={<Documentos />} />
-        <Route path="novedades" element={<AdminNovedades />} />
-      </Route>
+        {/* Admin routes */}
+        <Route
+          path="/admin"
+          element={
+            <PrivateRoute requiredRole="admin">
+              <AdminLayout />
+            </PrivateRoute>
+          }
+        >
+          <Route index element={<AdminDashboard />} />
+          <Route path="vehiculos" element={<Vehiculos />} />
+          <Route path="vehiculos/nuevo" element={<VehiculoForm />} />
+          <Route path="vehiculos/:id/editar" element={<VehiculoForm />} />
+          <Route path="vehiculos/:id" element={<VehiculoDetalle />} />
+          <Route path="choferes" element={<Choferes />} />
+          <Route path="choferes/nuevo" element={<ChoferForm />} />
+          <Route path="choferes/:id/editar" element={<ChoferForm />} />
+          <Route path="combustible" element={<Combustible />} />
+          <Route path="mantenimientos" element={<Mantenimientos />} />
+          <Route path="seguros" element={<Seguros />} />
+          <Route path="multas" element={<Multas />} />
+          <Route path="lineas" element={<LineasPage />} />
+          <Route path="adicionales" element={<Adicionales />} />
+          <Route path="mecanicos" element={<Mecanicos />} />
+          <Route path="vtv" element={<VtvRto />} />
+          <Route path="reportes" element={<Reportes />} />
+          <Route path="logs" element={<LogsActividad />} />
+          <Route path="usuarios" element={<Usuarios />} />
+          <Route path="liquidaciones" element={<Liquidaciones />} />
+          <Route path="documentos" element={<Documentos />} />
+          <Route path="novedades" element={<AdminNovedades />} />
+        </Route>
 
-      {/* Chofer routes */}
-      <Route
-        path="/chofer"
-        element={
-          <PrivateRoute requiredRole="chofer">
-            <ChoferLayout />
-          </PrivateRoute>
-        }
-      >
-        <Route index element={<ChoferDashboard />} />
-        <Route path="turno" element={<ChoferTurno />} />
-        <Route path="combustible" element={<ChoferCombustible />} />
-        <Route path="novedades" element={<ChoferNovedades />} />
-        <Route path="adicionales" element={<ChoferAdicionales />} />
-        <Route path="mantenimientos" element={<ChoferMantenimientos />} />
-      </Route>
+        {/* Chofer routes */}
+        <Route
+          path="/chofer"
+          element={
+            <PrivateRoute requiredRole="chofer">
+              <ChoferLayout />
+            </PrivateRoute>
+          }
+        >
+          <Route index element={<ChoferDashboard />} />
+          <Route path="turno" element={<ChoferTurno />} />
+          <Route path="combustible" element={<ChoferCombustible />} />
+          <Route path="novedades" element={<ChoferNovedades />} />
+          <Route path="adicionales" element={<ChoferAdicionales />} />
+          <Route path="mantenimientos" element={<ChoferMantenimientos />} />
+        </Route>
 
-      {/* Default redirect */}
-      <Route path="*" element={<Navigate to="/login" replace />} />
-    </Routes>
+        {/* Default redirect */}
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    </>
   )
 }
