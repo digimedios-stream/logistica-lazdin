@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { formatFechaCorta, formatMoneda } from '@/lib/utils'
+import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
 
 export default function Combustible() {
   const [cargas, setCargas] = useState([])
@@ -62,18 +63,18 @@ export default function Combustible() {
     try {
       // 1. Identificar y borrar fotos del Storage si existen
       const fotosABorrar = []
-      if (carga.foto_url) {
-        const path = carga.foto_url.split('/comprobantes/').pop()
+      if (carga.foto_url && carga.foto_url.includes('/tickets-combustible/')) {
+        const path = carga.foto_url.split('/tickets-combustible/').pop()
         if (path) fotosABorrar.push(path)
       }
-      if (carga.foto_surtidor_url) {
-        const path = carga.foto_surtidor_url.split('/comprobantes/').pop()
+      if (carga.foto_surtidor_url && carga.foto_surtidor_url.includes('/tickets-combustible/')) {
+        const path = carga.foto_surtidor_url.split('/tickets-combustible/').pop()
         if (path) fotosABorrar.push(path)
       }
 
       if (fotosABorrar.length > 0) {
         const { error: storageError } = await supabase.storage
-          .from('comprobantes')
+          .from('tickets-combustible')
           .remove(fotosABorrar)
         if (storageError) console.error('Error borrando fotos:', storageError)
       }
@@ -311,13 +312,39 @@ export default function Combustible() {
       </div>
 
       {modalImage && (
-        <div className="fixed inset-0 bg-slate-950/80 flex items-center justify-center z-50 p-4 animate-in fade-in" onClick={() => setModalImage(null)}>
-          <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl max-w-lg w-full relative shadow-2xl" onClick={e => e.stopPropagation()}>
-            <button onClick={() => setModalImage(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors bg-slate-800 hover:bg-slate-700 p-2 rounded-full flex">
-              <span className="material-symbols-outlined">close</span>
-            </button>
-            <div className="mt-8 flex justify-center">
-              <img src={modalImage} alt="Comprobante" className="max-h-[70vh] rounded-xl object-contain shadow-inner select-none" />
+        <div className="fixed inset-0 bg-slate-950/90 flex items-center justify-center z-50 p-2 sm:p-4 animate-in fade-in" onClick={() => setModalImage(null)}>
+          <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-800 p-2 sm:p-4 rounded-2xl w-full max-w-2xl max-h-[90vh] relative shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4 z-10 px-2">
+              <span className="text-slate-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2">
+                <span className="material-symbols-outlined text-lazdin-emerald">pinch</span>
+                Pellizca para acercar
+              </span>
+              <button onClick={() => setModalImage(null)} className="text-slate-400 hover:text-white transition-colors bg-slate-800 hover:bg-slate-700 p-2 rounded-full flex">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            
+            <div className="flex-1 flex justify-center items-center overflow-hidden rounded-xl bg-black/40 border border-slate-800/50">
+              <TransformWrapper
+                initialScale={1}
+                minScale={0.5}
+                maxScale={4}
+                centerOnInit={true}
+                wheel={{ step: 0.1 }}
+              >
+                {({ zoomIn, zoomOut, resetTransform, ...rest }) => (
+                  <>
+                    <div className="absolute bottom-4 right-4 z-20 flex gap-2">
+                      <button onClick={() => zoomIn()} className="bg-slate-800/80 hover:bg-slate-700 text-white p-2 rounded-full backdrop-blur-md transition-colors"><span className="material-symbols-outlined">zoom_in</span></button>
+                      <button onClick={() => zoomOut()} className="bg-slate-800/80 hover:bg-slate-700 text-white p-2 rounded-full backdrop-blur-md transition-colors"><span className="material-symbols-outlined">zoom_out</span></button>
+                      <button onClick={() => resetTransform()} className="bg-slate-800/80 hover:bg-slate-700 text-white p-2 rounded-full backdrop-blur-md transition-colors"><span className="material-symbols-outlined">restart_alt</span></button>
+                    </div>
+                    <TransformComponent wrapperStyle={{ width: "100%", height: "100%", maxHeight: "75vh" }}>
+                      <img src={modalImage} alt="Comprobante" className="max-h-[75vh] object-contain shadow-inner select-none pointer-events-auto" />
+                    </TransformComponent>
+                  </>
+                )}
+              </TransformWrapper>
             </div>
           </div>
         </div>

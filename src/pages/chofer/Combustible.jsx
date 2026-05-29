@@ -18,6 +18,7 @@ export default function ChoferCombustible() {
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(false)
   const [turnoActivo, setTurnoActivo] = useState(null)
+  const [analizandoIA, setAnalizandoIA] = useState(false)
   
   const [form, setForm] = useState({
     litros: '',
@@ -54,16 +55,78 @@ export default function ChoferCombustible() {
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
-  const handleFileChange = (e, type) => {
+  const handleFileChange = async (e, type) => {
     const file = e.target.files[0]
     if (file) {
       if (type === 'ticket') {
         setFotoTicket(file)
         setPreviewTicket(URL.createObjectURL(file))
+        // La IA está desactivada para los tickets porque las fotos suelen ser de mala calidad.
       } else {
         setFotoSurtidor(file)
         setPreviewSurtidor(URL.createObjectURL(file))
+        await procesarImagenConIA(file)
       }
+    }
+  }
+
+  const procesarImagenConIA = async (file) => {
+    try {
+      setAnalizandoIA(true)
+      const base64Url = await compressImageToBase64(file)
+      
+      const zhipuKey = import.meta.env.VITE_ZHIPU_API_KEY
+      
+      if (!zhipuKey) throw new Error("Clave API de IA no encontrada. Verifica tu archivo .env o configuración del servidor.")
+
+      const response = await fetch("https://open.bigmodel.cn/api/paas/v4/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${zhipuKey}`
+        },
+        body: JSON.stringify({
+          model: "glm-4v-flash",
+          messages: [
+            {
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text: "Analiza esta imagen (ticket o surtidor). Extrae la cantidad total de litros cargados ('litros', como número) y la marca o nombre de la estación de servicio ('estacion', ej: YPF, Shell, Axion, Puma). Responde ÚNICAMENTE con un JSON válido usando este formato exacto: {\"litros\": 15.5, \"estacion\": \"YPF\"}. No agregues explicaciones, markdown, ni texto adicional."
+                },
+                {
+                  type: "image_url",
+                  image_url: {
+                    url: base64Url
+                  }
+                }
+              ]
+            }
+          ]
+        })
+      })
+
+      if (!response.ok) throw new Error("Fallo la comunicación con la IA")
+
+      const data = await response.json()
+      const content = data.choices?.[0]?.message?.content || "{}"
+      
+      let cleanContent = content.replace(/```json/g, '').replace(/```/g, '').trim()
+      const resultado = JSON.parse(cleanContent)
+
+      if (resultado) {
+        setForm(prev => ({
+          ...prev,
+          litros: resultado.litros ? String(resultado.litros) : prev.litros,
+          estacion: resultado.estacion ? resultado.estacion : prev.estacion
+        }))
+      }
+    } catch (err) {
+      console.error("Error analizando con IA:", err)
+      // Si falla, no rompemos la app, el chofer lo carga manual
+    } finally {
+      setAnalizandoIA(false)
     }
   }
 
@@ -143,27 +206,7 @@ export default function ChoferCombustible() {
         }
       }
 
-      // 2. Comprimir y convertir las fotos a Base64 directamente
-      const ticketUrl = await compressImageToBase64(fotoTicket)
-      const surtidorUrl = await compressImageToBase64(fotoSurtidor)
-
-      // 3. Calcular consumo (opcional, igual que antes)
-      const { data: anterior } = await supabase
-        .from('cargas_combustible')
-        .select('*')
-        .eq('vehiculo_id', vehiculoAsignado.id)
-        .order('fecha_hora', { ascending: false })
-        .limit(1)
-
-      const odometro_anterior = anterior && anterior.length > 0 ? anterior[0].odometro_actual : null
-      
-      let consumo_calculado = null
-      if (odometro_anterior && Number(form.odometro_actual) > Number(odometro_anterior)) {
-        const kms = Number(form.odometro_actual) - Number(odometro_anterior)
-        consumo_calculado = (Number(form.litros) / kms) * 100 
-      }
-
-      // 4. Crear cliente adminSupabase para la base de datos
+      // 2. Crear cliente adminSupabase para la base de datos y Storage
       const adminSupabase = createClient(
         'https://zcfkonxsngniqkkzzrlk.supabase.co',
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpjZmtvbnhzbmduaXFra3p6cmxrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyNzA3MzUsImV4cCI6MjA5MDg0NjczNX0.n5SYfKYyY6RqOaKY1tp9i5cRIzFVNxifoJ-ELV7lAKU',
@@ -180,6 +223,40 @@ export default function ChoferCombustible() {
         password: 'admin1234'
       })
       if (loginError) throw new Error('Error de conexión administrativa para el insert: ' + loginError.message)
+
+      // 3. Procesar fotos (Surtidor a Base64, Ticket original a Storage)
+      let ticketUrl = null
+      if (fotoTicket) {
+        const ext = fotoTicket.name.split('.').pop() || 'jpg'
+        const fileName = `ticket-${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`
+        
+        const { error: storageError } = await adminSupabase.storage
+          .from('tickets-combustible')
+          .upload(fileName, fotoTicket, { cacheControl: '3600', upsert: true })
+        
+        if (storageError) throw new Error('Error al subir el ticket original: ' + storageError.message)
+        
+        const { data: publicUrlData } = adminSupabase.storage.from('tickets-combustible').getPublicUrl(fileName)
+        ticketUrl = publicUrlData.publicUrl
+      }
+      
+      const surtidorUrl = await compressImageToBase64(fotoSurtidor)
+
+      // 4. Calcular consumo (opcional, igual que antes)
+      const { data: anterior } = await supabase
+        .from('cargas_combustible')
+        .select('*')
+        .eq('vehiculo_id', vehiculoAsignado.id)
+        .order('fecha_hora', { ascending: false })
+        .limit(1)
+
+      const odometro_anterior = anterior && anterior.length > 0 ? anterior[0].odometro_actual : null
+      
+      let consumo_calculado = null
+      if (odometro_anterior && Number(form.odometro_actual) > Number(odometro_anterior)) {
+        const kms = Number(form.odometro_actual) - Number(odometro_anterior)
+        consumo_calculado = (Number(form.litros) / kms) * 100 
+      }
 
       // 5. Insertar registro como admin
       const { error: insError } = await adminSupabase.from('cargas_combustible').insert({
@@ -296,37 +373,49 @@ export default function ChoferCombustible() {
             <div className="grid grid-cols-2 gap-4">
               {/* Card Foto Ticket */}
               <div 
-                onClick={() => ticketInputRef.current.click()}
-                className={`group relative h-36 border-2 border-dashed ${fotoTicket ? 'border-lazdin-emerald bg-lazdin-emerald/10' : 'border-slate-800 bg-slate-950/30'} rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all active:scale-[0.98] overflow-hidden`}
+                onClick={() => !analizandoIA && ticketInputRef.current.click()}
+                className={`group relative h-36 border-2 border-dashed ${fotoTicket ? 'border-lazdin-emerald bg-lazdin-emerald/10' : 'border-slate-800 bg-slate-950/30'} rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all active:scale-[0.98] overflow-hidden ${analizandoIA ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 {previewTicket ? (
                   <img src={previewTicket} className="absolute inset-0 w-full h-full object-cover opacity-60" />
                 ) : (
                   <span className={`material-symbols-outlined text-4xl mb-2 ${fotoTicket ? 'text-lazdin-emerald' : 'text-slate-700'}`}>receipt_long</span>
                 )}
+                {analizandoIA && (
+                  <div className="absolute inset-0 bg-slate-950/80 z-20 flex flex-col items-center justify-center backdrop-blur-sm">
+                    <span className="material-symbols-outlined animate-spin text-lazdin-emerald mb-2 text-2xl">sync</span>
+                    <span className="text-[10px] text-white font-black animate-pulse">ANALIZANDO IA...</span>
+                  </div>
+                )}
                 <div className="relative z-10 flex flex-col items-center">
                    <span className={`text-[10px] font-black text-center ${fotoTicket ? 'text-white' : 'text-slate-600 uppercase'}`}>
                      {fotoTicket ? 'TICKET LISTO' : 'FOTO TICKET'}
                    </span>
-                   {fotoTicket && <span className="text-[8px] bg-emerald-500 text-white px-2 py-0.5 rounded-full mt-1 font-black">EDITAR</span>}
+                   {fotoTicket && !analizandoIA && <span className="text-[8px] bg-emerald-500 text-white px-2 py-0.5 rounded-full mt-1 font-black">EDITAR</span>}
                 </div>
               </div>
 
               {/* Card Foto Surtidor */}
               <div 
-                onClick={() => surtidorInputRef.current.click()}
-                className={`group relative h-36 border-2 border-dashed ${fotoSurtidor ? 'border-lazdin-emerald bg-lazdin-emerald/10' : 'border-slate-800 bg-slate-950/30'} rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all active:scale-[0.98] overflow-hidden`}
+                onClick={() => !analizandoIA && surtidorInputRef.current.click()}
+                className={`group relative h-36 border-2 border-dashed ${fotoSurtidor ? 'border-lazdin-emerald bg-lazdin-emerald/10' : 'border-slate-800 bg-slate-950/30'} rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all active:scale-[0.98] overflow-hidden ${analizandoIA ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 {previewSurtidor ? (
                   <img src={previewSurtidor} className="absolute inset-0 w-full h-full object-cover opacity-60" />
                 ) : (
                   <span className={`material-symbols-outlined text-4xl mb-2 ${fotoSurtidor ? 'text-lazdin-emerald' : 'text-slate-700'}`}>gas_meter</span>
                 )}
+                {analizandoIA && (
+                  <div className="absolute inset-0 bg-slate-950/80 z-20 flex flex-col items-center justify-center backdrop-blur-sm">
+                    <span className="material-symbols-outlined animate-spin text-lazdin-emerald mb-2 text-2xl">sync</span>
+                    <span className="text-[10px] text-white font-black animate-pulse">ANALIZANDO IA...</span>
+                  </div>
+                )}
                 <div className="relative z-10 flex flex-col items-center">
                    <span className={`text-[10px] font-black text-center ${fotoSurtidor ? 'text-white' : 'text-slate-600 uppercase'}`}>
                      {fotoSurtidor ? 'SURTIDOR LISTO' : 'FOTO SURTIDOR'}
                    </span>
-                   {fotoSurtidor && <span className="text-[8px] bg-emerald-500 text-white px-2 py-0.5 rounded-full mt-1 font-black">EDITAR</span>}
+                   {fotoSurtidor && !analizandoIA && <span className="text-[8px] bg-emerald-500 text-white px-2 py-0.5 rounded-full mt-1 font-black">EDITAR</span>}
                 </div>
               </div>
             </div>
