@@ -10,6 +10,8 @@ export default function Combustible() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [modalImage, setModalImage] = useState(null)
+  const [filtroFecha, setFiltroFecha] = useState('')
+  const [filtroVehiculo, setFiltroVehiculo] = useState('')
 
   const initialState = { 
     id: null, 
@@ -153,6 +155,31 @@ export default function Combustible() {
     }
   }
 
+  const cargasFiltradas = cargas.filter(c => {
+    if (filtroFecha && !c.fecha_hora.startsWith(filtroFecha)) return false
+    if (filtroVehiculo && c.vehiculo_id !== filtroVehiculo) return false
+    return true
+  })
+
+  const agrupadas = {}
+  cargasFiltradas.forEach(c => {
+    let monthKey = 'Sin Fecha'
+    if (c.fecha_hora) {
+      // Ajustamos la fecha para evitar problemas de zona horaria usando substring
+      const año = c.fecha_hora.substring(0, 4)
+      const mes = parseInt(c.fecha_hora.substring(5, 7), 10) - 1
+      const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+      monthKey = `${meses[mes]} ${año}`
+    }
+    
+    if (!agrupadas[monthKey]) agrupadas[monthKey] = {}
+    
+    const vehKey = c.vehiculo ? `${c.vehiculo.marca} ${c.vehiculo.modelo} (${c.vehiculo.patente})` : 'Vehículo Eliminado'
+    if (!agrupadas[monthKey][vehKey]) agrupadas[monthKey][vehKey] = []
+    
+    agrupadas[monthKey][vehKey].push(c)
+  })
+
   return (
     <div className="space-y-6 animate-in">
       <div>
@@ -231,81 +258,130 @@ export default function Combustible() {
 
         <div className="xl:col-span-2">
           <div className="bg-lazdin-surface border border-slate-800 rounded-xl overflow-hidden shadow-xl">
-             <div className="p-4 border-b border-slate-800 bg-slate-900/50">
+             <div className="p-4 border-b border-slate-800 bg-slate-900/50 flex flex-col sm:flex-row justify-between items-center gap-4">
                <h3 className="text-xs font-bold uppercase text-slate-400 tracking-wider">Historial de Cargas</h3>
+               <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                 <input 
+                   type="date" 
+                   value={filtroFecha} 
+                   onChange={e => setFiltroFecha(e.target.value)} 
+                   className="form-field p-2 text-xs bg-slate-950" 
+                   title="Filtrar por fecha exacta"
+                 />
+                 <select 
+                   value={filtroVehiculo} 
+                   onChange={e => setFiltroVehiculo(e.target.value)}
+                   className="form-field p-2 text-xs bg-slate-950"
+                 >
+                   <option value="">Todos los vehículos</option>
+                   {vehiculos.map(v => <option key={v.id} value={v.id}>{v.patente} - {v.marca}</option>)}
+                 </select>
+               </div>
              </div>
-             <div className="overflow-x-auto">
-               <table className="w-full text-left border-collapse">
-                 <thead>
-                   <tr className="bg-slate-800/20 text-slate-500 uppercase text-[10px] font-bold">
-                     <th className="px-6 py-4">Fecha</th>
-                     <th className="px-6 py-4">Patente</th>
-                     <th className="px-6 py-4">Litros</th>
-                     <th className="px-6 py-4">Total</th>
-                     <th className="px-6 py-4">KM</th>
-                     <th className="px-6 py-4">Fotos / Admin</th>
-                   </tr>
-                 </thead>
-                 <tbody className="divide-y divide-slate-800">
-                   {loading ? (
-                     <tr><td colSpan="6" className="px-6 py-8 text-center text-slate-500">Cargando historial...</td></tr>
-                   ) : cargas.length === 0 ? (
-                     <tr><td colSpan="6" className="px-6 py-8 text-center text-slate-500">No hay cargas registradas aún.</td></tr>
-                   ) : (
-                     cargas.map(c => (
-                       <tr key={c.id} className="hover:bg-slate-800/10">
-                         <td className="px-6 py-4 text-xs font-mono text-slate-400">
-                           {formatFechaCorta(c.fecha_hora)}
-                         </td>
-                         <td className="px-6 py-4">
-                           <div className="font-bold text-white uppercase">{c.vehiculo?.marca} {c.vehiculo?.modelo}</div>
-                           <div className="text-[10px] text-slate-500 font-mono italic">({c.vehiculo?.patente || 'S/P'}) — {c.chofer?.nombre || 'Admin'}</div>
-                         </td>
-                         <td className="px-6 py-4 text-amber-500 font-bold whitespace-nowrap">
-                           {c.litros} L
-                         </td>
-                         <td className="px-6 py-4 font-mono font-bold text-lazdin-emerald">
-                           {formatMoneda(c.precio_total)}
-                         </td>
-                         <td className="px-6 py-4 font-mono text-slate-400 text-xs">
-                           {c.odometro_actual} km
-                         </td>
-                         <td className="px-6 py-4">
-                           <div className="flex items-center gap-3">
-                             <div className="flex gap-2 text-slate-400">
-                               {c.foto_url && (
-                                 <button onClick={() => setModalImage(c.foto_url)} title="Ver Ticket" className="hover:text-lazdin-emerald transition-colors">
-                                   <span className="material-symbols-outlined text-xl">receipt_long</span>
-                                 </button>
-                               )}
-                               {c.foto_surtidor_url && (
-                                 <button onClick={() => setModalImage(c.foto_surtidor_url)} title="Ver Surtidor" className="hover:text-amber-500 transition-colors">
-                                   <span className="material-symbols-outlined text-xl">gas_meter</span>
-                                 </button>
-                               )}
-                               {!c.foto_url && !c.foto_surtidor_url && <span className="text-slate-700">-</span>}
+             
+             <div className="p-4 space-y-8 h-[calc(100vh-200px)] overflow-y-auto">
+               {loading ? (
+                 <div className="text-center text-slate-500 py-8">Cargando historial...</div>
+               ) : Object.keys(agrupadas).length === 0 ? (
+                 <div className="text-center text-slate-500 py-8">No hay cargas que coincidan con los filtros.</div>
+               ) : (
+                 Object.keys(agrupadas).map(month => (
+                   <div key={month} className="space-y-4 animate-in fade-in">
+                     <h4 className="text-lg font-bold text-lazdin-emerald capitalize border-b border-slate-800/50 pb-2 flex items-center gap-2">
+                       <span className="material-symbols-outlined">calendar_month</span>
+                       {month}
+                     </h4>
+                     
+                     <div className="space-y-4 pl-2 border-l-2 border-slate-800/50">
+                       {Object.keys(agrupadas[month]).map(vehiculo => {
+                         const totalLitros = agrupadas[month][vehiculo].reduce((sum, c) => sum + (Number(c.litros) || 0), 0)
+                         const totalGasto = agrupadas[month][vehiculo].reduce((sum, c) => sum + (Number(c.precio_total) || 0), 0)
+                         
+                         return (
+                           <div key={vehiculo} className="bg-slate-800/20 rounded-xl overflow-hidden border border-slate-800/50">
+                             <div className="bg-slate-800/50 px-4 py-3 text-sm font-bold text-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                               <div className="flex items-center gap-2">
+                                 <span className="material-symbols-outlined text-slate-400">local_shipping</span>
+                                 {vehiculo}
+                               </div>
+                               <div className="text-xs font-normal flex flex-wrap gap-3">
+                                 <span className="bg-slate-950/50 px-2 py-1 rounded text-slate-300">
+                                   {agrupadas[month][vehiculo].length} cargas
+                                 </span>
+                                 <span className="bg-amber-500/10 text-amber-500 px-2 py-1 rounded">
+                                   {totalLitros.toFixed(2)} L
+                                 </span>
+                                 <span className="bg-emerald-500/10 text-emerald-500 px-2 py-1 rounded">
+                                   {formatMoneda(totalGasto)}
+                                 </span>
+                               </div>
                              </div>
-                             <button 
-                               onClick={() => handleEdit(c)}
-                               className="p-1.5 text-slate-600 hover:text-sky-400 transition-colors rounded-lg hover:bg-sky-500/10"
-                               title="Editar Carga"
-                             >
-                               <span className="material-symbols-outlined text-lg">edit</span>
-                             </button>
-                             <button 
-                               onClick={() => eliminarCarga(c)}
-                               className="p-1.5 text-slate-600 hover:text-red-400 transition-colors rounded-lg hover:bg-red-500/10"
-                               title="Eliminar Registro y Fotos"
-                             >
-                               <span className="material-symbols-outlined text-lg">delete</span>
-                             </button>
+                             
+                             <div className="overflow-x-auto">
+                               <table className="w-full text-left border-collapse">
+                                 <thead>
+                                   <tr className="bg-slate-900/30 text-slate-500 uppercase text-[10px] font-bold">
+                                     <th className="px-4 py-2">Fecha</th>
+                                     <th className="px-4 py-2">Chofer</th>
+                                     <th className="px-4 py-2">Litros</th>
+                                     <th className="px-4 py-2">Total</th>
+                                     <th className="px-4 py-2">KM</th>
+                                     <th className="px-4 py-2">Acciones</th>
+                                   </tr>
+                                 </thead>
+                                 <tbody className="divide-y divide-slate-800/50">
+                                   {agrupadas[month][vehiculo].map(c => (
+                                     <tr key={c.id} className="hover:bg-slate-800/40">
+                                       <td className="px-4 py-3 text-xs font-mono text-slate-400 whitespace-nowrap">
+                                         {formatFechaCorta(c.fecha_hora)}
+                                       </td>
+                                       <td className="px-4 py-3 text-xs text-slate-300">
+                                         {c.chofer?.nombre || 'Admin'}
+                                       </td>
+                                       <td className="px-4 py-3 text-amber-500 font-bold text-xs whitespace-nowrap">
+                                         {c.litros} L
+                                       </td>
+                                       <td className="px-4 py-3 font-mono font-bold text-lazdin-emerald text-xs whitespace-nowrap">
+                                         {formatMoneda(c.precio_total)}
+                                       </td>
+                                       <td className="px-4 py-3 font-mono text-slate-400 text-xs">
+                                         {c.odometro_actual} km
+                                       </td>
+                                       <td className="px-4 py-3">
+                                         <div className="flex items-center gap-1">
+                                           <div className="flex gap-1 text-slate-400 mr-2">
+                                             {c.foto_url && (
+                                               <button onClick={() => setModalImage(c.foto_url)} title="Ver Ticket" className="hover:text-lazdin-emerald transition-colors p-1">
+                                                 <span className="material-symbols-outlined text-[18px]">receipt_long</span>
+                                               </button>
+                                             )}
+                                             {c.foto_surtidor_url && (
+                                               <button onClick={() => setModalImage(c.foto_surtidor_url)} title="Ver Surtidor" className="hover:text-amber-500 transition-colors p-1">
+                                                 <span className="material-symbols-outlined text-[18px]">gas_meter</span>
+                                               </button>
+                                             )}
+                                             {!c.foto_url && !c.foto_surtidor_url && <span className="text-slate-700 px-2">-</span>}
+                                           </div>
+                                           <button onClick={() => handleEdit(c)} className="p-1.5 text-slate-600 hover:text-sky-400 transition-colors rounded-lg hover:bg-sky-500/10" title="Editar">
+                                             <span className="material-symbols-outlined text-[18px]">edit</span>
+                                           </button>
+                                           <button onClick={() => eliminarCarga(c)} className="p-1.5 text-slate-600 hover:text-red-400 transition-colors rounded-lg hover:bg-red-500/10" title="Eliminar">
+                                             <span className="material-symbols-outlined text-[18px]">delete</span>
+                                           </button>
+                                         </div>
+                                       </td>
+                                     </tr>
+                                   ))}
+                                 </tbody>
+                               </table>
+                             </div>
                            </div>
-                         </td>
-                       </tr>
-                     ))
-                   )}
-                 </tbody>
-               </table>
+                         )
+                       })}
+                     </div>
+                   </div>
+                 ))
+               )}
              </div>
           </div>
         </div>
