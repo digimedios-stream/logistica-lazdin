@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { supabase } from '@/lib/supabase'
+import { choferesService } from '@/services/choferesService'
 import { formatFechaCorta, estadoVencimiento } from '@/lib/utils'
 
 export default function Choferes() {
@@ -12,18 +12,8 @@ export default function Choferes() {
 
   async function cargarChoferes() {
     try {
-      const { data } = await supabase
-        .from('choferes')
-        .select(`
-          *,
-          user_roles(rol),
-          asignaciones_vehiculo_chofer(
-            activo,
-            vehiculo:vehiculos(patente, marca, modelo)
-          )
-        `)
-        .eq('activo', true)
-        .order('nombre')
+      setLoading(true)
+      const data = await choferesService.getChoferes()
       
       setChoferes(data || [])
     } catch (err) { console.error(err) }
@@ -35,22 +25,7 @@ export default function Choferes() {
     
     try {
       setLoading(true)
-      const { error } = await supabase
-        .from('choferes')
-        .update({ activo: false })
-        .eq('id', id)
-      
-      if (error) throw error
-
-      // Desactivamos automáticamente la asignación de vehículo activa para este chofer
-      await supabase
-        .from('asignaciones_vehiculo_chofer')
-        .update({ 
-          activo: false, 
-          fecha_fin: new Date().toISOString().split('T')[0] 
-        })
-        .eq('chofer_id', id)
-        .eq('activo', true)
+      await choferesService.softDeleteChofer(id)
 
       await cargarChoferes()
     } catch (err) {

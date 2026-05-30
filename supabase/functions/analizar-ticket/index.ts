@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from 'jsr:@supabase/supabase-js@2'
 
 Deno.serve(async (req: Request) => {
   // Manejo de CORS
@@ -10,6 +11,22 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      throw new Error("No autorizado")
+    }
+
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    )
+
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
+    if (authError || !user) {
+      throw new Error("Token inválido o expirado")
+    }
+
     const { imagenBase64 } = await req.json()
     
     if (!imagenBase64) {
@@ -36,7 +53,7 @@ Deno.serve(async (req: Request) => {
             content: [
               {
                 type: "text",
-                text: "Analiza esta imagen (ticket o surtidor). Extrae la cantidad total de litros cargados ('litros', como número) y la marca o nombre de la estación de servicio ('estacion', ej: YPF, Shell, Axion, Puma). Responde ÚNICAMENTE con un JSON válido usando este formato exacto: {\"litros\": 15.5, \"estacion\": \"YPF\"}. No agregues explicaciones, markdown, ni texto adicional."
+                text: "Analiza esta imagen (ticket o surtidor). Extrae la cantidad total de litros cargados ('litros', como número) y la marca o nombre de la estación de servicio ('estacion', ej: YPF, Shell, Axion, Puma). Responde ÚNICAMENTE con un JSON válido usando este formato exacto: {\"litros\": 15.5, \"estacion\": \"YPF\"}. Si la imagen es muy borrosa, oscura, o no puedes identificar claramente la cantidad de litros, responde EXACTAMENTE con este JSON: {\"error\": \"IMAGEN_ILEGIBLE\"}. No agregues explicaciones, markdown, ni texto adicional."
               },
               {
                 type: "image_url",

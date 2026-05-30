@@ -3,8 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
-import { createClient } from '@supabase/supabase-js'
-
 export default function ChoferCombustible() {
   const { choferData, vehiculoAsignado } = useAuth()
   const { tema } = useTheme()
@@ -100,47 +98,20 @@ export default function ChoferCombustible() {
       setAnalizandoIA(true)
       const base64Url = await compressImageToBase64(file)
       
-      const zhipuKey = import.meta.env.VITE_ZHIPU_API_KEY
-      
-      if (!zhipuKey) throw new Error("Clave API de IA no encontrada. Verifica tu archivo .env o configuración del servidor.")
-
-      const response = await fetch("https://open.bigmodel.cn/api/paas/v4/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${zhipuKey}`
-        },
-        body: JSON.stringify({
-          model: "glm-4v-flash",
-          messages: [
-            {
-              role: "user",
-              content: [
-                {
-                  type: "text",
-                  text: "Analiza esta foto del surtidor de combustible. Extrae la cantidad total de litros cargados ('litros', como número), el importe total o monto en dinero ('precio_total', como número sin moneda), y la marca o nombre de la estación de servicio ('estacion', ej: YPF, Shell, Axion, Puma). Responde ÚNICAMENTE con un JSON válido usando este formato exacto: {\"litros\": 15.5, \"precio_total\": 20000.5, \"estacion\": \"YPF\"}. No agregues explicaciones, markdown, ni texto adicional."
-                },
-                {
-                  type: "image_url",
-                  image_url: {
-                    url: base64Url
-                  }
-                }
-              ]
-            }
-          ]
-        })
+      const { data, error } = await supabase.functions.invoke('analizar-ticket', {
+        body: { imagenBase64: base64Url }
       })
 
-      if (!response.ok) throw new Error("Fallo la comunicación con la IA")
-
-      const data = await response.json()
-      const content = data.choices?.[0]?.message?.content || "{}"
+      if (error) throw new Error("Fallo la comunicación con la Edge Function: " + error.message)
       
-      let cleanContent = content.replace(/```json/g, '').replace(/```/g, '').trim()
-      const resultado = JSON.parse(cleanContent)
+      const resultado = data?.data || {}
 
-      if (resultado) {
+      if (resultado.error === "IMAGEN_ILEGIBLE") {
+        setError("La foto del surtidor no es clara o está borrosa. Por favor, intenta tomar otra o ingresa los litros manualmente.")
+        setFotoSurtidor(null)
+        setPreviewSurtidor(null)
+      } else if (resultado) {
+        setError(null)
         setForm(prev => ({
           ...prev,
           litros: resultado.litros ? String(resultado.litros) : prev.litros,
@@ -232,23 +203,6 @@ export default function ChoferCombustible() {
         }
       }
 
-      // 2. Crear cliente adminSupabase para la base de datos y Storage
-      const adminSupabase = createClient(
-        'https://zcfkonxsngniqkkzzrlk.supabase.co',
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpjZmtvbnhzbmduaXFra3p6cmxrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyNzA3MzUsImV4cCI6MjA5MDg0NjczNX0.n5SYfKYyY6RqOaKY1tp9i5cRIzFVNxifoJ-ELV7lAKU',
-        {
-          auth: {
-            persistSession: false,
-            autoRefreshToken: false
-          }
-        }
-      )
-
-      const { error: loginError } = await adminSupabase.auth.signInWithPassword({
-        email: 'admin2@lazdin.com',
-        password: 'admin1234'
-      })
-      if (loginError) throw new Error('Error de conexión administrativa para el insert: ' + loginError.message)
 
       // 3. Procesar fotos (Surtidor a Base64, Ticket original a Storage)
       let ticketUrl = null
@@ -256,13 +210,13 @@ export default function ChoferCombustible() {
         const ext = fotoTicket.name.split('.').pop() || 'jpg'
         const fileName = `ticket-${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`
         
-        const { error: storageError } = await adminSupabase.storage
+        const { error: storageError } = await supabase.storage
           .from('tickets-combustible')
           .upload(fileName, fotoTicket, { cacheControl: '3600', upsert: true })
         
         if (storageError) throw new Error('Error al subir el ticket original: ' + storageError.message)
         
-        const { data: publicUrlData } = adminSupabase.storage.from('tickets-combustible').getPublicUrl(fileName)
+        const { data: publicUrlData } = supabase.storage.from('tickets-combustible').getPublicUrl(fileName)
         ticketUrl = publicUrlData.publicUrl
       }
       
@@ -284,8 +238,8 @@ export default function ChoferCombustible() {
         consumo_calculado = (Number(form.litros) / kms) * 100 
       }
 
-      // 5. Insertar registro como admin
-      const { error: insError } = await adminSupabase.from('cargas_combustible').insert({
+      // 5. Insertar registro como usuario autenticado
+      const { error: insError } = await supabase.from('cargas_combustible').insert({
         vehiculo_id: vehiculoAsignado.id,
         chofer_id: choferData.id,
         turno_id: turno_id_to_use,
@@ -302,8 +256,8 @@ export default function ChoferCombustible() {
 
       if (insError) throw insError
 
-      // 6. Actualizar KM del vehículo como admin
-      const { error: upError } = await adminSupabase
+      // 6. Actualizar KM del vehículo como usuario autenticado
+      const { error: upError } = await supabase
         .from('vehiculos')
         .update({ kilometraje_actual: Number(form.odometro_actual) })
         .eq('id', vehiculoAsignado.id)

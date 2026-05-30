@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { supabase } from '@/lib/supabase'
+import { vehiculosService } from '@/services/vehiculosService'
 import { formatKm, formatPatente, tipoPropietarioLabel, estadoVencimiento, formatFechaCorta } from '@/lib/utils'
 
 export default function Vehiculos() {
@@ -13,16 +13,8 @@ export default function Vehiculos() {
 
   async function cargarVehiculos() {
     try {
-      let query = supabase.from('vehiculos').select(`
-        *, 
-        linea:lineas(nombre), 
-        vtv:vtv_rto(fecha_vencimiento),
-        asignaciones:asignaciones_vehiculo_chofer(
-          activo,
-          chofer:choferes(nombre)
-        )
-      `).eq('activo', true).order('patente')
-      const { data } = await query
+      setLoading(true)
+      const data = await vehiculosService.getVehiculos()
       setVehiculos(data || [])
     } catch (err) { console.error(err) }
     finally { setLoading(false) }
@@ -35,12 +27,7 @@ export default function Vehiculos() {
     
     try {
       setLoading(true)
-      const { error } = await supabase
-        .from('vehiculos')
-        .update({ activo: false })
-        .eq('id', id)
-      
-      if (error) throw error
+      await vehiculosService.softDeleteVehiculo(id)
       await cargarVehiculos()
     } catch (err) {
       alert('Error: ' + err.message)
