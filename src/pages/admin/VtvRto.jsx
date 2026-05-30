@@ -66,10 +66,15 @@ export default function VtvRto() {
     setSaving(true)
     try {
       const { id, vehiculo, ...dataToSave } = form
+
+      if (!dataToSave.fecha_realizacion) dataToSave.fecha_realizacion = null
+
       if (id) {
-        await supabase.from('vtv_rto').update(dataToSave).eq('id', id)
+        const { error } = await supabase.from('vtv_rto').update(dataToSave).eq('id', id)
+        if (error) throw error
       } else {
-        await supabase.from('vtv_rto').insert(dataToSave)
+        const { error } = await supabase.from('vtv_rto').insert(dataToSave)
+        if (error) throw error
       }
       await cargarDatos()
       handleCancel()

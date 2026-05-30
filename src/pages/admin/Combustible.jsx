@@ -35,7 +35,7 @@ export default function Combustible() {
     try {
       const [resCargas, resVeh, resChof] = await Promise.all([
         supabase.from('cargas_combustible').select('*, vehiculo:vehiculos(marca, modelo, patente), chofer:choferes(nombre)').order('fecha_hora', { ascending: false }),
-        supabase.from('vehiculos').select('id, marca, modelo, patente').eq('activo', true),
+        supabase.from('vehiculos').select('id, marca, modelo, patente, cupo_combustible_mensual').eq('activo', true),
         supabase.from('choferes').select('id, nombre').eq('activo', true)
       ])
       setCargas(resCargas.data || [])
@@ -297,25 +297,47 @@ export default function Combustible() {
                          const totalLitros = agrupadas[month][vehiculo].reduce((sum, c) => sum + (Number(c.litros) || 0), 0)
                          const totalGasto = agrupadas[month][vehiculo].reduce((sum, c) => sum + (Number(c.precio_total) || 0), 0)
                          
+                         const vObj = vehiculos.find(v => `${v.marca} ${v.modelo} (${v.patente})` === vehiculo)
+                         const cupo = vObj?.cupo_combustible_mensual || 0
+                         const pct = cupo > 0 ? (totalGasto / cupo) * 100 : 0
+                         
                          return (
-                           <div key={vehiculo} className="bg-slate-800/20 rounded-xl overflow-hidden border border-slate-800/50">
-                             <div className="bg-slate-800/50 px-4 py-3 text-sm font-bold text-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                           <div key={vehiculo} className={`bg-slate-800/20 rounded-xl overflow-hidden border ${cupo > 0 && totalGasto > cupo ? 'border-red-500/50' : cupo > 0 && pct >= 80 ? 'border-amber-500/50' : 'border-slate-800/50'}`}>
+                             <div className={`px-4 py-3 text-sm font-bold flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 ${cupo > 0 && totalGasto > cupo ? 'bg-red-950/40 text-red-100' : cupo > 0 && pct >= 80 ? 'bg-amber-950/40 text-amber-100' : 'bg-slate-800/50 text-white'}`}>
                                <div className="flex items-center gap-2">
-                                 <span className="material-symbols-outlined text-slate-400">local_shipping</span>
+                                 <span className={`material-symbols-outlined ${cupo > 0 && totalGasto > cupo ? 'text-red-400' : cupo > 0 && pct >= 80 ? 'text-amber-400' : 'text-slate-400'}`}>
+                                   {cupo > 0 && pct >= 80 ? 'warning' : 'local_shipping'}
+                                 </span>
                                  {vehiculo}
                                </div>
-                               <div className="text-xs font-normal flex flex-wrap gap-3">
+                               <div className="text-xs font-normal flex flex-wrap items-center gap-3">
                                  <span className="bg-slate-950/50 px-2 py-1 rounded text-slate-300">
                                    {agrupadas[month][vehiculo].length} cargas
                                  </span>
                                  <span className="bg-amber-500/10 text-amber-500 px-2 py-1 rounded">
                                    {totalLitros.toFixed(2)} L
                                  </span>
-                                 <span className="bg-emerald-500/10 text-emerald-500 px-2 py-1 rounded">
-                                   {formatMoneda(totalGasto)}
-                                 </span>
+                                 {cupo > 0 ? (
+                                   <div className="flex items-center gap-2 bg-slate-950/50 px-2 py-1 rounded">
+                                      <span className={totalGasto > cupo ? 'text-red-400 font-bold' : pct >= 80 ? 'text-amber-400 font-bold' : 'text-lazdin-emerald font-bold'}>
+                                        {formatMoneda(totalGasto)}
+                                      </span>
+                                      <span className="text-slate-500">/</span>
+                                      <span className="text-slate-400 font-mono text-[10px]">{formatMoneda(cupo)}</span>
+                                   </div>
+                                 ) : (
+                                   <span className="bg-emerald-500/10 text-emerald-500 px-2 py-1 rounded">
+                                     {formatMoneda(totalGasto)}
+                                   </span>
+                                 )}
                                </div>
                              </div>
+                             
+                             {cupo > 0 && (
+                               <div className="w-full bg-slate-900 h-1">
+                                 <div className={`h-full ${totalGasto > cupo ? 'bg-red-500' : pct >= 80 ? 'bg-amber-500' : 'bg-lazdin-emerald'}`} style={{ width: `${Math.min(pct, 100)}%` }}></div>
+                               </div>
+                             )}
                              
                              <div className="overflow-x-auto">
                                <table className="w-full text-left border-collapse">

@@ -20,7 +20,8 @@ export default function VehiculoForm() {
     propietario_nombre: '', propietario_cuit: '', propietario_telefono: '',
     propietario_email: '', propietario_direccion: '',
     contrato_numero: '', contrato_vencimiento: '',
-    linea_principal_id: '', activo: true, foto_url: ''
+    linea_principal_id: '', activo: true, foto_url: '',
+    cupo_combustible_mensual: 0
   })
 
   useEffect(() => {
@@ -235,6 +236,10 @@ export default function VehiculoForm() {
                 <div>
                   <label className="text-xs font-bold text-slate-400 uppercase">Año</label>
                   <input type="number" name="anio" value={form.anio} onChange={handleChange} className="form-field" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-400 uppercase text-amber-500">Cupo Mensual Combustible ($)</label>
+                  <input type="number" name="cupo_combustible_mensual" value={form.cupo_combustible_mensual} onChange={handleChange} className="form-field border-amber-500/50 text-amber-500 font-bold" />
                 </div>
                 <div>
                   <label className="text-xs font-bold text-slate-400 uppercase">Kilometraje actual</label>

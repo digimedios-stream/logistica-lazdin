@@ -16,12 +16,20 @@ export default function Reportes() {
   const [periodo, setPeriodo] = useState('mes_actual')
   const [kpis, setKpis] = useState({ totalCombustible: 0, totalMantenimiento: 0, viajesRealizados: 0, kmRecorridos: 0 })
   const [gastosPorDia, setGastosPorDia] = useState([])
-  const [vehiculosConsumo, setVehiculosConsumo] = useState([])
-  const [mantenimientosPorTipo, setMantenimientosPorTipo] = useState([])
+  const [vehiculosLista, setVehiculosLista] = useState([])
+  const [vehiculoFiltro, setVehiculoFiltro] = useState('')
+
+  useEffect(() => {
+    async function initVehiculos() {
+      const { data } = await supabase.from('vehiculos').select('id, patente, marca, modelo').eq('activo', true)
+      if (data) setVehiculosLista(data)
+    }
+    initVehiculos()
+  }, [])
 
   useEffect(() => {
     cargarDatos()
-  }, [periodo])
+  }, [periodo, vehiculoFiltro])
 
   async function cargarDatos() {
     setLoading(true)
@@ -47,11 +55,20 @@ export default function Reportes() {
 
       const isoDate = dateFilter.toISOString()
 
-      const [resComb, resMant, resTurnos] = await Promise.all([
-        supabase.from('cargas_combustible').select('fecha_hora, precio_total, vehiculo:vehiculos(patente)').gte('fecha_hora', isoDate),
-        supabase.from('mantenimientos').select('fecha, costo, tipo, vehiculo:vehiculos(patente)').gte('fecha', isoDate),
-        supabase.from('turnos').select('fecha_inicio, odometro_inicio, odometro_fin, kilometros_recorridos, fecha_fin').gte('fecha_inicio', isoDate).not('fecha_fin', 'is', null)
-      ])
+      let qComb = supabase.from('cargas_combustible').select('vehiculo_id, fecha_hora, precio_total, vehiculo:vehiculos(patente)').gte('fecha_hora', isoDate)
+      let qMant = supabase.from('mantenimientos').select('vehiculo_id, fecha, costo, tipo, vehiculo:vehiculos(patente)').gte('fecha', isoDate)
+      let qTurnos = supabase.from('turnos').select('vehiculo_id, fecha_inicio, odometro_inicio, odometro_fin, kilometros_recorridos, fecha_fin').gte('fecha_inicio', isoDate).not('fecha_fin', 'is', null)
+
+      if (vehiculoFiltro) {
+        qComb = qComb.eq('vehiculo_id', vehiculoFiltro)
+        qMant = qMant.eq('vehiculo_id', vehiculoFiltro)
+        qTurnos = qTurnos.eq('vehiculo_id', vehiculoFiltro)
+      }
+
+      // Top Vehículos siempre se calcula global para mantener el ranking
+      const resCombGlobal = await supabase.from('cargas_combustible').select('precio_total, vehiculo:vehiculos(patente)').gte('fecha_hora', isoDate)
+
+      const [resComb, resMant, resTurnos] = await Promise.all([qComb, qMant, qTurnos])
 
       if (resComb.error) throw resComb.error
       if (resMant.error) throw resMant.error
@@ -60,6 +77,7 @@ export default function Reportes() {
       const comb = resComb.data || []
       const mant = resMant.data || []
       const turnos = resTurnos.data || []
+      const combGlobal = resCombGlobal.data || []
 
       // KPIs
       const tComb = comb.reduce((acc, curr) => acc + Number(curr.precio_total || 0), 0)
@@ -85,9 +103,9 @@ export default function Reportes() {
       // If empty layout placeholder:
       setGastosPorDia(chartDias.length ? chartDias : [{ fecha: 'Sin datos', Combustible: 0, Mantenimiento: 0 }])
 
-      // Chart 2: Combustible por Vehículo
+      // Chart 2: Combustible por Vehículo (Global)
       const vMap = {}
-      comb.forEach(c => {
+      combGlobal.forEach(c => {
         const pat = c.vehiculo ? c.vehiculo.patente : 'N/A'
         if (!vMap[pat]) vMap[pat] = 0
         vMap[pat] += Number(c.precio_total || 0)
@@ -114,9 +132,10 @@ export default function Reportes() {
 
   const exportToExcel = () => {
     try {
+      const vNombre = vehiculoFiltro ? vehiculosLista.find(v => v.id === vehiculoFiltro)?.patente || vehiculoFiltro : 'Global'
       const wb = XLSX.utils.book_new()
       const kpisArr = [{
-        'Reporte': 'Lazdin Operativo',
+        'Reporte': `Lazdin Operativo - ${vNombre}`,
         'Combustible': formatMoneda(kpis.totalCombustible),
         'Mantenimiento': formatMoneda(kpis.totalMantenimiento),
         'Viajes': kpis.viajesRealizados,
@@ -136,7 +155,7 @@ export default function Reportes() {
       const excelBase64 = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' })
       const link = document.createElement('a')
       link.href = `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${excelBase64}`
-      link.download = `Reporte-Lazdin.xlsx`
+      link.download = vehiculoFiltro ? `Reporte-Lazdin-${vNombre}.xlsx` : `Reporte-Lazdin.xlsx`
       link.click()
     } catch(e) { 
       alert("Error en Excel: " + e.message) 
@@ -145,11 +164,15 @@ export default function Reportes() {
 
   const exportToPDF = () => {
     try {
+      const vNombre = vehiculoFiltro ? vehiculosLista.find(v => v.id === vehiculoFiltro)?.patente || vehiculoFiltro : 'Global'
       const doc = new jsPDF()
       doc.setFontSize(20)
       doc.text("LOGISTICA LAZDIN", 15, 20)
       doc.setFontSize(10)
-      doc.text(`Reporte Operativo - ${periodo.replace('_', ' ').toUpperCase()}`, 15, 28)
+      const titulo = vehiculoFiltro 
+        ? `Reporte Operativo - ${periodo.replace('_', ' ').toUpperCase()} (Vehículo: ${vNombre})` 
+        : `Reporte Operativo - ${periodo.replace('_', ' ').toUpperCase()} (Global)`
+      doc.text(titulo, 15, 28)
 
       doc.autoTable({
         startY: 35,
@@ -167,7 +190,7 @@ export default function Reportes() {
       const pdfBase64 = doc.output('datauristring')
       const link = document.createElement('a')
       link.href = pdfBase64
-      link.download = `Reporte-Lazdin.pdf`
+      link.download = vehiculoFiltro ? `Reporte-Lazdin-${vNombre}.pdf` : `Reporte-Lazdin.pdf`
       link.click()
     } catch (e) {
       alert("Error en PDF: " + e.message)
@@ -183,6 +206,17 @@ export default function Reportes() {
         </div>
         
         <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+          <select 
+            value={vehiculoFiltro} 
+            onChange={(e) => setVehiculoFiltro(e.target.value)}
+            className="form-field w-full sm:w-48 bg-slate-900 font-bold text-sm shadow-inner"
+          >
+            <option value="">Todos los vehículos</option>
+            {vehiculosLista.map(v => (
+              <option key={v.id} value={v.id}>{v.patente} - {v.marca} {v.modelo}</option>
+            ))}
+          </select>
+
           <select 
             value={periodo} 
             onChange={(e) => setPeriodo(e.target.value)}

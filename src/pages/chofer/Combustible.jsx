@@ -22,10 +22,13 @@ export default function ChoferCombustible() {
   
   const [form, setForm] = useState({
     litros: '',
+    precio_total: '',
     odometro_actual: '',
     estacion: '',
     tipo_combustible: 'Gasoil'
   })
+  
+  const [gastadoMes, setGastadoMes] = useState(0)
 
   const [fotoTicket, setFotoTicket] = useState(null)
   const [fotoSurtidor, setFotoSurtidor] = useState(null)
@@ -36,7 +39,29 @@ export default function ChoferCombustible() {
 
   useEffect(() => {
     if (choferData?.id) cargarTurnoActivo()
-  }, [choferData])
+    if (vehiculoAsignado?.id) cargarGastosMes()
+  }, [choferData, vehiculoAsignado])
+
+  async function cargarGastosMes() {
+    try {
+      const dateFilter = new Date()
+      dateFilter.setDate(1)
+      dateFilter.setHours(0, 0, 0, 0)
+      
+      const { data } = await supabase
+        .from('cargas_combustible')
+        .select('precio_total')
+        .eq('vehiculo_id', vehiculoAsignado.id)
+        .gte('fecha_hora', dateFilter.toISOString())
+        
+      if (data) {
+         const sum = data.reduce((acc, curr) => acc + Number(curr.precio_total || 0), 0)
+         setGastadoMes(sum)
+      }
+    } catch (err) {
+      console.log('Error calculando gastos del mes', err)
+    }
+  }
 
   async function cargarTurnoActivo() {
     try {
@@ -93,7 +118,7 @@ export default function ChoferCombustible() {
               content: [
                 {
                   type: "text",
-                  text: "Analiza esta imagen (ticket o surtidor). Extrae la cantidad total de litros cargados ('litros', como número) y la marca o nombre de la estación de servicio ('estacion', ej: YPF, Shell, Axion, Puma). Responde ÚNICAMENTE con un JSON válido usando este formato exacto: {\"litros\": 15.5, \"estacion\": \"YPF\"}. No agregues explicaciones, markdown, ni texto adicional."
+                  text: "Analiza esta foto del surtidor de combustible. Extrae la cantidad total de litros cargados ('litros', como número), el importe total o monto en dinero ('precio_total', como número sin moneda), y la marca o nombre de la estación de servicio ('estacion', ej: YPF, Shell, Axion, Puma). Responde ÚNICAMENTE con un JSON válido usando este formato exacto: {\"litros\": 15.5, \"precio_total\": 20000.5, \"estacion\": \"YPF\"}. No agregues explicaciones, markdown, ni texto adicional."
                 },
                 {
                   type: "image_url",
@@ -119,6 +144,7 @@ export default function ChoferCombustible() {
         setForm(prev => ({
           ...prev,
           litros: resultado.litros ? String(resultado.litros) : prev.litros,
+          precio_total: resultado.precio_total ? String(resultado.precio_total) : prev.precio_total,
           estacion: resultado.estacion ? resultado.estacion : prev.estacion
         }))
       }
@@ -264,6 +290,7 @@ export default function ChoferCombustible() {
         chofer_id: choferData.id,
         turno_id: turno_id_to_use,
         litros: Number(form.litros),
+        precio_total: Number(form.precio_total || 0),
         odometro_actual: Number(form.odometro_actual),
         odometro_anterior: odometro_anterior,
         consumo_calculado: consumo_calculado,
@@ -321,6 +348,45 @@ export default function ChoferCombustible() {
         </div>
       )}
 
+      {/* CUPO DE COMBUSTIBLE PANEL */}
+      {vehiculoAsignado?.cupo_combustible_mensual > 0 && (
+        <div className={`p-4 rounded-2xl mb-6 shadow-xl border ${gastadoMes > vehiculoAsignado.cupo_combustible_mensual ? 'bg-red-950/40 border-red-500/50' : (gastadoMes / vehiculoAsignado.cupo_combustible_mensual) >= 0.8 ? 'bg-amber-950/40 border-amber-500/50' : 'bg-lazdin-surface border-lazdin-outline-variant/30'}`}>
+           <h3 className="text-xs uppercase font-black text-slate-400 mb-3 flex items-center gap-2">
+             <span className="material-symbols-outlined text-sm">account_balance_wallet</span>
+             Cupo Mensual del Vehículo
+           </h3>
+           <div className="flex justify-between items-end mb-2">
+             <div>
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-0.5">Asignado</p>
+                <p className="font-bold">${vehiculoAsignado.cupo_combustible_mensual.toLocaleString()}</p>
+             </div>
+             <div className="text-right">
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-0.5">Restante</p>
+                <p className={`text-xl font-black ${gastadoMes > vehiculoAsignado.cupo_combustible_mensual ? 'text-red-500' : (gastadoMes / vehiculoAsignado.cupo_combustible_mensual) >= 0.8 ? 'text-amber-500' : 'text-lazdin-emerald'}`}>
+                  ${(vehiculoAsignado.cupo_combustible_mensual - gastadoMes).toLocaleString()}
+                </p>
+             </div>
+           </div>
+           
+           <div className="w-full bg-slate-900 rounded-full h-2 mb-3 mt-1 overflow-hidden">
+             <div className={`h-full rounded-full transition-all duration-1000 ${gastadoMes > vehiculoAsignado.cupo_combustible_mensual ? 'bg-red-500' : (gastadoMes / vehiculoAsignado.cupo_combustible_mensual) >= 0.8 ? 'bg-amber-500' : 'bg-lazdin-emerald'}`} style={{ width: `${Math.min((gastadoMes / vehiculoAsignado.cupo_combustible_mensual) * 100, 100)}%` }}></div>
+           </div>
+
+           {(gastadoMes / vehiculoAsignado.cupo_combustible_mensual) >= 0.8 && gastadoMes <= vehiculoAsignado.cupo_combustible_mensual && (
+             <p className="text-[10px] font-bold text-amber-500 mt-2 flex items-center gap-1">
+               <span className="material-symbols-outlined text-[14px]">warning</span>
+               ATENCIÓN: EL CUPO PODRÍA SER INSUFICIENTE PARA FINALIZAR EL MES.
+             </p>
+           )}
+           {gastadoMes > vehiculoAsignado.cupo_combustible_mensual && (
+             <p className="text-[10px] font-bold text-red-500 mt-2 flex items-center gap-1">
+               <span className="material-symbols-outlined text-[14px]">error</span>
+               ATENCIÓN: SE HA EXCEDIDO EL CUPO MENSUAL ESTABLECIDO.
+             </p>
+           )}
+        </div>
+      )}
+
       {error && (
         <div className="bg-red-500/10 border border-red-500/40 text-red-500 p-4 rounded-xl mb-6 text-xs font-bold flex items-center gap-3">
            <span className="material-symbols-outlined">error</span>
@@ -339,15 +405,29 @@ export default function ChoferCombustible() {
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Odómetro Km</label>
               <div className="relative group">
-                <input required type="number" name="odometro_actual" value={form.odometro_actual} onChange={handleChange} className="form-field text-2xl font-mono text-center h-14 bg-slate-950/50" placeholder="00000" />
+                <input required type="number" name="odometro_actual" value={form.odometro_actual} onChange={handleChange} className="form-field text-xl md:text-2xl font-mono text-center h-14 bg-slate-950/50 px-2" placeholder="00000" />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 text-[10px] font-black tracking-tighter">KM</span>
               </div>
             </div>
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Litros</label>
               <div className="relative group">
-                <input required type="number" step="0.01" name="litros" value={form.litros} onChange={handleChange} className="form-field text-2xl font-mono text-center h-14 bg-slate-950/50" placeholder="0.0" />
+                <input required type="number" step="0.01" name="litros" value={form.litros} onChange={handleChange} className="form-field text-xl md:text-2xl font-mono text-center h-14 bg-slate-950/50 px-2" placeholder="0.0" />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 text-[10px] font-black tracking-tighter text-blue-500">LTS</span>
+              </div>
+            </div>
+            <div className="col-span-2 space-y-2 mt-2">
+              <label className="text-[10px] font-black text-amber-500 uppercase tracking-widest ml-1 flex justify-between">
+                Importe Total ($)
+                {form.precio_total && vehiculoAsignado?.cupo_combustible_mensual > 0 && (
+                  <span className={Number(form.precio_total) + gastadoMes > vehiculoAsignado.cupo_combustible_mensual ? 'text-red-500' : 'text-amber-500/50'}>
+                    Afecta Cupo
+                  </span>
+                )}
+              </label>
+              <div className="relative group">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500 font-black">$</span>
+                <input required type="number" step="0.01" name="precio_total" value={form.precio_total} onChange={handleChange} className="form-field text-2xl font-mono text-center h-14 bg-slate-950/50 border-amber-500/30 text-amber-400" placeholder="0.00" />
               </div>
             </div>
           </div>

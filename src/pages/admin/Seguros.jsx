@@ -66,10 +66,15 @@ export default function Seguros() {
     setSaving(true)
     try {
       const { id, vehiculo, ...dataToSave } = form
+
+      if (!dataToSave.fecha_inicio) dataToSave.fecha_inicio = null
+
       if (id) {
-        await supabase.from('seguros').update(dataToSave).eq('id', id)
+        const { error } = await supabase.from('seguros').update(dataToSave).eq('id', id)
+        if (error) throw error
       } else {
-        await supabase.from('seguros').insert(dataToSave)
+        const { error } = await supabase.from('seguros').insert(dataToSave)
+        if (error) throw error
       }
       await cargarDatos()
       handleCancel()
