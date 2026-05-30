@@ -16,6 +16,8 @@ export default function Reportes() {
   const [periodo, setPeriodo] = useState('mes_actual')
   const [kpis, setKpis] = useState({ totalCombustible: 0, totalMantenimiento: 0, viajesRealizados: 0, kmRecorridos: 0 })
   const [gastosPorDia, setGastosPorDia] = useState([])
+  const [vehiculosConsumo, setVehiculosConsumo] = useState([])
+  const [mantenimientosPorTipo, setMantenimientosPorTipo] = useState([])
   const [vehiculosLista, setVehiculosLista] = useState([])
   const [vehiculoFiltro, setVehiculoFiltro] = useState('')
 
