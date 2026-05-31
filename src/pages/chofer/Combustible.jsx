@@ -121,7 +121,7 @@ export default function ChoferCombustible() {
       }
     } catch (err) {
       console.error("Error analizando con IA:", err)
-      // Si falla, no rompemos la app, el chofer lo carga manual
+      setError("Fallo la IA (¿falta la API Key en el servidor?). Puedes ingresar los datos manualmente.")
     } finally {
       setAnalizandoIA(false)
     }

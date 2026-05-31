@@ -53,7 +53,7 @@ Deno.serve(async (req: Request) => {
             content: [
               {
                 type: "text",
-                text: "Analiza esta imagen (ticket o surtidor). Extrae la cantidad total de litros cargados ('litros', como número) y la marca o nombre de la estación de servicio ('estacion', ej: YPF, Shell, Axion, Puma). Responde ÚNICAMENTE con un JSON válido usando este formato exacto: {\"litros\": 15.5, \"estacion\": \"YPF\"}. Si la imagen es muy borrosa, oscura, o no puedes identificar claramente la cantidad de litros, responde EXACTAMENTE con este JSON: {\"error\": \"IMAGEN_ILEGIBLE\"}. No agregues explicaciones, markdown, ni texto adicional."
+                text: "Analiza esta imagen (ticket o surtidor). Extrae la cantidad total de litros cargados ('litros', como número), el importe total o precio en dinero ('precio_total', como número) y la marca o nombre de la estación ('estacion', ej: YPF, Shell). Responde ÚNICAMENTE con JSON válido formato: {\"litros\": 15.5, \"precio_total\": 15000, \"estacion\": \"YPF\"}. Si es muy borrosa o no puedes leer los litros, responde: {\"error\": \"IMAGEN_ILEGIBLE\"}. Sin explicaciones."
               },
               {
                 type: "image_url",
