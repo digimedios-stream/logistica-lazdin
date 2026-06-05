@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
+import { saveOfflineRecord, STORES } from '@/utils/offlineStorage'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
 export default function ChoferCombustible() {
@@ -15,6 +16,7 @@ export default function ChoferCombustible() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(false)
+  const [isOfflineSaved, setIsOfflineSaved] = useState(false)
   const [turnoActivo, setTurnoActivo] = useState(null)
   const [analizandoIA, setAnalizandoIA] = useState(false)
   
@@ -203,6 +205,33 @@ export default function ChoferCombustible() {
         }
       }
 
+      // 2. Revisar conexión
+      if (!navigator.onLine) {
+        const surtidorUrl = await compressImageToBase64(fotoSurtidor)
+        const payload = {
+          vehiculo_id: vehiculoAsignado.id,
+          chofer_id: choferData.id,
+          turno_id: turno_id_to_use,
+          litros: Number(form.litros),
+          precio_total: Number(form.precio_total || 0),
+          odometro_actual: Number(form.odometro_actual),
+          odometro_anterior: null,
+          consumo_calculado: null,
+          estacion: form.estacion,
+          tipo_combustible: form.tipo_combustible,
+          foto_surtidor_url: surtidorUrl
+        }
+        
+        await saveOfflineRecord(STORES.CARGAS, {
+           payload,
+           fotoTicket: fotoTicket,
+        })
+        
+        setIsOfflineSaved(true)
+        setSuccess(true)
+        setTimeout(() => navigate('/chofer'), 2500)
+        return
+      }
 
       // 3. Procesar fotos (Surtidor a Base64, Ticket original a Storage)
       let ticketUrl = null
@@ -277,11 +306,19 @@ export default function ChoferCombustible() {
   if (success) {
     return (
       <div className="max-w-lg mx-auto py-20 animate-in fade-in flex flex-col items-center text-center">
-        <div className={`w-24 h-24 rounded-full ${tema.accentBg} flex items-center justify-center mb-6 shadow-2xl`}>
-          <span className={`material-symbols-outlined text-5xl ${tema.accentText}`}>check_circle</span>
+        <div className={`w-24 h-24 rounded-full ${isOfflineSaved ? 'bg-amber-500/20 text-amber-500' : tema.accentBg} flex items-center justify-center mb-6 shadow-2xl`}>
+          <span className={`material-symbols-outlined text-5xl ${isOfflineSaved ? 'text-amber-500' : tema.accentText}`}>
+            {isOfflineSaved ? 'cloud_off' : 'check_circle'}
+          </span>
         </div>
-        <h2 className="text-3xl font-black mb-2 italic">CARGA REGISTRADA</h2>
-        <p className="text-slate-400">El suministro se ha guardado correctamente.</p>
+        <h2 className={`text-3xl font-black mb-2 italic ${isOfflineSaved ? 'text-amber-500' : ''}`}>
+          {isOfflineSaved ? 'GUARDADO LOCALMENTE' : 'CARGA REGISTRADA'}
+        </h2>
+        <p className="text-slate-400">
+          {isOfflineSaved 
+            ? 'Estás sin conexión. El suministro se subirá automáticamente cuando recuperes internet.' 
+            : 'El suministro se ha guardado correctamente.'}
+        </p>
       </div>
     )
   }

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useSync } from '@/hooks/useSync'
 
 const NAV_ITEMS = [
   { to: '/chofer', icon: 'dashboard', label: 'Inicio', end: true },
@@ -17,6 +18,8 @@ export default function ChoferLayout() {
   const { tema, esTercero, nombreMostrar, modoClaro, toggleTemaClaroOscuro } = useTheme()
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  useSync() // Inicializa el listener de sincronización offline
 
   const handleLogout = async () => {
     await logout()

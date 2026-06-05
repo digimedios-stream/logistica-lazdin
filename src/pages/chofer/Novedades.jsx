@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
 import { formatFechaHora } from '@/lib/utils'
+import { saveOfflineRecord, STORES } from '@/utils/offlineStorage'
 export default function ChoferNovedades() {
   const { choferData, vehiculoAsignado, loading: authLoading } = useAuth()
   const { tema } = useTheme()
@@ -74,6 +75,32 @@ export default function ChoferNovedades() {
     setError(null)
 
     try {
+      if (!navigator.onLine) {
+        const payload = {
+          chofer_id: choferData.id,
+          vehiculo_id: vehiculoAsignado?.id,
+          turno_id: turnoActivo?.id,
+          tipo: form.tipo,
+          gravedad: form.gravedad,
+          descripcion: form.descripcion,
+          estado: 'abierta',
+          fecha_hora: new Date().toISOString()
+        }
+        
+        await saveOfflineRecord(STORES.NOVEDADES, {
+           payload,
+           foto: foto,
+        })
+        
+        setNovedades([{...payload, id: 'temp-'+Date.now(), foto_url: preview}, ...novedades])
+        setShowForm(false)
+        setForm({ tipo: 'retraso', gravedad: 'baja', descripcion: '' })
+        setFoto(null)
+        setPreview(null)
+        setSaving(false)
+        return
+      }
+
       let foto_url = null
       if (foto) {
         const fileExt = foto.name.split('.').pop()
