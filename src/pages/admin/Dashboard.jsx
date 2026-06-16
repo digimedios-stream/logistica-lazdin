@@ -54,8 +54,17 @@ export default function AdminDashboard() {
         .eq('estado', 'programado')
 
       if (mants) {
-         const pendientes = mants.filter(m => {
-           if (!m.vehiculo || !m.proximo_km) return false
+         // Agrupar por vehículo y quedarse con el que tiene el mayor proximo_km
+         const mantsMap = new Map();
+         mants.forEach(m => {
+            if (!m.vehiculo || !m.proximo_km) return;
+            const existing = mantsMap.get(m.vehiculo.id);
+            if (!existing || m.proximo_km > existing.proximo_km) {
+                mantsMap.set(m.vehiculo.id, m);
+            }
+         });
+
+         const pendientes = Array.from(mantsMap.values()).filter(m => {
            return m.vehiculo.kilometraje_actual >= (m.proximo_km - 800)
          }).sort((a, b) => (a.proximo_km - a.vehiculo.kilometraje_actual) - (b.proximo_km - b.vehiculo.kilometraje_actual))
          
