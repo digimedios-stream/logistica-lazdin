@@ -23,6 +23,7 @@ export default function AdminDashboard() {
   const { adminNombre } = useAuth()
   const [stats, setStats] = useState(null)
   const [vencimientos, setVencimientos] = useState([])
+  const [mantenimientosPendientes, setMantenimientosPendientes] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -38,6 +39,29 @@ export default function AdminDashboard() {
       // Próximos vencimientos
       const { data: venc } = await supabase.rpc('fn_obtener_vencimientos_proximos', { p_dias: 60 })
       setVencimientos(venc || [])
+
+      // Mantenimientos pendientes / próximos (800km)
+      const { data: mants } = await supabase
+        .from('mantenimientos')
+        .select(`
+          id, 
+          descripcion, 
+          proximo_km, 
+          estado,
+          fecha,
+          vehiculo:vehiculos(id, patente, marca, modelo, kilometraje_actual)
+        `)
+        .eq('estado', 'programado')
+
+      if (mants) {
+         const pendientes = mants.filter(m => {
+           if (!m.vehiculo || !m.proximo_km) return false
+           return m.vehiculo.kilometraje_actual >= (m.proximo_km - 800)
+         }).sort((a, b) => (a.proximo_km - a.vehiculo.kilometraje_actual) - (b.proximo_km - b.vehiculo.kilometraje_actual))
+         
+         setMantenimientosPendientes(pendientes)
+      }
+
     } catch (err) {
       console.error('Error cargando dashboard:', err)
     } finally {
@@ -65,7 +89,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
         <KPICard
           icon="local_shipping"
           label="Total Vehículos"
@@ -84,11 +108,19 @@ export default function AdminDashboard() {
         />
         <KPICard
           icon="event_busy"
-          label="Próximos Vencimientos"
+          label="Vencimientos Doc."
           value={String(stats?.proximos_vencimientos || 0).padStart(2, '0')}
           badge="Revisar"
           badgeColor="text-red-400 bg-red-900/20"
           borderColor="border-l-red-400"
+        />
+        <KPICard
+          icon="build"
+          label="Services Requeridos"
+          value={String(mantenimientosPendientes.length).padStart(2, '0')}
+          badge={mantenimientosPendientes.filter(m => m.vehiculo.kilometraje_actual >= m.proximo_km).length + " Vencidos"}
+          badgeColor={mantenimientosPendientes.some(m => m.vehiculo.kilometraje_actual >= m.proximo_km) ? "text-red-400 bg-red-900/20" : "text-amber-400 bg-amber-900/20"}
+          borderColor={mantenimientosPendientes.some(m => m.vehiculo.kilometraje_actual >= m.proximo_km) ? "border-l-red-400" : "border-l-amber-400"}
         />
         <KPICard
           icon="speed"
@@ -201,6 +233,51 @@ export default function AdminDashboard() {
           </table>
         </div>
       </div>
+      
+      {/* Mantenimientos Table */}
+      {mantenimientosPendientes.length > 0 && (
+        <div className="bg-lazdin-surface rounded-xl overflow-hidden border border-lazdin-outline-variant/20 shadow-sm mt-8">
+          <div className="p-6 border-b border-lazdin-outline-variant/20 flex items-center justify-between">
+            <h3 className="font-bold text-lg flex items-center gap-2">
+              <span className="material-symbols-outlined text-amber-500">build</span>
+              Alertas de Mantenimiento
+            </h3>
+            <span className="text-lazdin-on-surface-variant text-sm">{mantenimientosPendientes.length} vehículos</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="bg-lazdin-surface-low text-xs font-bold uppercase text-lazdin-on-surface-variant">
+                <tr>
+                  <th className="px-6 py-4">Vehículo</th>
+                  <th className="px-6 py-4">Descripción</th>
+                  <th className="px-6 py-4">Km Actual</th>
+                  <th className="px-6 py-4">Programado</th>
+                  <th className="px-6 py-4">Estado</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-lazdin-outline-variant/10 text-sm">
+                {mantenimientosPendientes.map((m, i) => {
+                  const vencido = m.vehiculo.kilometraje_actual >= m.proximo_km
+                  const restantes = m.proximo_km - m.vehiculo.kilometraje_actual
+                  return (
+                    <tr key={i} className="table-row-hover">
+                      <td className="px-6 py-4 font-medium">{m.vehiculo.marca} {m.vehiculo.modelo} ({m.vehiculo.patente})</td>
+                      <td className="px-6 py-4">{m.descripcion}</td>
+                      <td className="px-6 py-4 font-mono text-sm">{formatKm(m.vehiculo.kilometraje_actual)}</td>
+                      <td className="px-6 py-4 font-mono text-sm">{formatKm(m.proximo_km)}</td>
+                      <td className="px-6 py-4">
+                        <span className={`badge-${vencido ? 'urgente' : 'pendiente'}`}>
+                          {vencido ? 'VENCIDO' : `Faltan ${restantes} km`}
+                        </span>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

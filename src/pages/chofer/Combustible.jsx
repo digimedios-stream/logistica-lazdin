@@ -29,6 +29,7 @@ export default function ChoferCombustible() {
   })
   
   const [gastadoMes, setGastadoMes] = useState(0)
+  const [proximoMantenimiento, setProximoMantenimiento] = useState(null)
 
   const [fotoTicket, setFotoTicket] = useState(null)
   const [fotoSurtidor, setFotoSurtidor] = useState(null)
@@ -39,8 +40,26 @@ export default function ChoferCombustible() {
 
   useEffect(() => {
     if (choferData?.id) cargarTurnoActivo()
-    if (vehiculoAsignado?.id) cargarGastosMes()
+    if (vehiculoAsignado?.id) {
+      cargarGastosMes()
+      cargarProximoMantenimiento()
+    }
   }, [choferData, vehiculoAsignado])
+
+  async function cargarProximoMantenimiento() {
+    try {
+      const { data } = await supabase
+        .from('mantenimientos')
+        .select('proximo_km, descripcion')
+        .eq('vehiculo_id', vehiculoAsignado.id)
+        .eq('estado', 'programado')
+        .order('proximo_km', { ascending: true })
+        .limit(1)
+      if (data && data.length > 0) setProximoMantenimiento(data[0])
+    } catch (err) {
+      console.log('Error cargando próximo mantenimiento', err)
+    }
+  }
 
   async function cargarGastosMes() {
     try {
@@ -293,6 +312,32 @@ export default function ChoferCombustible() {
 
       if (upError) throw upError
 
+      // 7. Chequear si superó mantenimiento y generar novedad
+      if (proximoMantenimiento) {
+        const kmsFaltantes = proximoMantenimiento.proximo_km - Number(form.odometro_actual)
+        if (kmsFaltantes <= 0) {
+          const { data: novExistente } = await supabase
+            .from('novedades')
+            .select('id')
+            .eq('vehiculo_id', vehiculoAsignado.id)
+            .eq('tipo', 'mantenimiento_vencido')
+            .eq('estado', 'abierta')
+            .limit(1)
+
+          if (!novExistente || novExistente.length === 0) {
+            await supabase.from('novedades').insert({
+              chofer_id: choferData.id,
+              vehiculo_id: vehiculoAsignado.id,
+              turno_id: turno_id_to_use,
+              tipo: 'mantenimiento_vencido',
+              gravedad: 'alta',
+              descripcion: `El vehículo ha superado el kilometraje para su mantenimiento programado: "${proximoMantenimiento.descripcion}". Kilometraje actual: ${form.odometro_actual} km (Programado a los ${proximoMantenimiento.proximo_km} km).`,
+              estado: 'abierta'
+            })
+          }
+        }
+      }
+
       setSuccess(true)
       setTimeout(() => navigate('/chofer'), 2000)
 
@@ -376,6 +421,26 @@ export default function ChoferCombustible() {
              </p>
            )}
         </div>
+      )}
+
+      {/* ALERTA DE MANTENIMIENTO */}
+      {proximoMantenimiento && form.odometro_actual && (
+        (() => {
+          const kmsFaltantes = proximoMantenimiento.proximo_km - Number(form.odometro_actual)
+          if (kmsFaltantes <= 800) {
+            const isVencido = kmsFaltantes <= 0
+            return (
+              <div className={`p-4 rounded-xl mb-6 text-xs font-bold flex flex-col sm:flex-row items-start sm:items-center gap-3 border ${isVencido ? 'bg-red-500/10 border-red-500/40 text-red-500' : 'bg-amber-500/10 border-amber-500/40 text-amber-500'}`}>
+                 <span className="material-symbols-outlined text-2xl">{isVencido ? 'error' : 'warning'}</span>
+                 <div>
+                   <p className="uppercase tracking-widest text-[10px] opacity-80 mb-0.5">Aviso de Mantenimiento</p>
+                   <p className="leading-tight">{isVencido ? `El vehículo ha superado el kilometraje para su service programado a los ${proximoMantenimiento.proximo_km} km.` : `El vehículo está próximo a su service programado a los ${proximoMantenimiento.proximo_km} km. Faltan ${kmsFaltantes} km.`}</p>
+                 </div>
+              </div>
+            )
+          }
+          return null
+        })()
       )}
 
       {error && (

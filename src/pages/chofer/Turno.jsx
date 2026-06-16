@@ -16,6 +16,7 @@ export default function ChoferTurno() {
   const [odometro, setOdometro] = useState('')
   const [error, setError] = useState(null)
   const [duracion, setDuracion] = useState('00:00:00')
+  const [proximoMantenimiento, setProximoMantenimiento] = useState(null)
 
   useEffect(() => {
     if (!authLoading) {
@@ -25,7 +26,23 @@ export default function ChoferTurno() {
         setLoading(false)
       }
     }
-  }, [choferData, authLoading])
+    if (vehiculoAsignado?.id) {
+      cargarProximoMantenimiento()
+    }
+  }, [choferData, authLoading, vehiculoAsignado])
+
+  async function cargarProximoMantenimiento() {
+    try {
+      const { data } = await supabase
+        .from('mantenimientos')
+        .select('proximo_km, descripcion')
+        .eq('vehiculo_id', vehiculoAsignado.id)
+        .eq('estado', 'programado')
+        .order('proximo_km', { ascending: true })
+        .limit(1)
+      if (data && data.length > 0) setProximoMantenimiento(data[0])
+    } catch (err) {}
+  }
 
   useEffect(() => {
     let interval = null
@@ -107,6 +124,32 @@ export default function ChoferTurno() {
           .from('vehiculos')
           .update({ kilometraje_actual: odometro })
           .eq('id', vehiculoAsignado?.id)
+
+        // CHEQUEO DE MANTENIMIENTO AL CERRAR TURNO
+        if (proximoMantenimiento) {
+          const kmsFaltantes = proximoMantenimiento.proximo_km - Number(odometro)
+          if (kmsFaltantes <= 0) {
+            const { data: novExistente } = await supabase
+              .from('novedades')
+              .select('id')
+              .eq('vehiculo_id', vehiculoAsignado.id)
+              .eq('tipo', 'mantenimiento_vencido')
+              .eq('estado', 'abierta')
+              .limit(1)
+
+            if (!novExistente || novExistente.length === 0) {
+              await supabase.from('novedades').insert({
+                chofer_id: choferData.id,
+                vehiculo_id: vehiculoAsignado.id,
+                turno_id: turnoActivo.id,
+                tipo: 'mantenimiento_vencido',
+                gravedad: 'alta',
+                descripcion: `El vehículo ha finalizado la jornada superando el kilometraje para su mantenimiento programado: "${proximoMantenimiento.descripcion}". Kilometraje final: ${odometro} km (Programado a los ${proximoMantenimiento.proximo_km} km).`,
+                estado: 'abierta'
+              })
+            }
+          }
+        }
 
         setTurnoActivo(null)
         setOdometro('')
@@ -202,6 +245,26 @@ export default function ChoferTurno() {
                 </div>
                 <p className="text-center text-xs text-slate-500 mt-2">Ingresa el kilometraje actual del tablero</p>
               </div>
+
+              {/* ALERTA DE MANTENIMIENTO */}
+              {proximoMantenimiento && odometro && (
+                (() => {
+                  const kmsFaltantes = proximoMantenimiento.proximo_km - Number(odometro)
+                  if (kmsFaltantes <= 800) {
+                    const isVencido = kmsFaltantes <= 0
+                    return (
+                      <div className={`p-4 rounded-xl text-xs font-bold flex flex-col sm:flex-row items-start sm:items-center gap-3 border ${isVencido ? 'bg-red-500/10 border-red-500/40 text-red-500' : 'bg-amber-500/10 border-amber-500/40 text-amber-500'}`}>
+                         <span className="material-symbols-outlined text-2xl">{isVencido ? 'error' : 'warning'}</span>
+                         <div>
+                           <p className="uppercase tracking-widest text-[10px] opacity-80 mb-0.5">Aviso de Mantenimiento</p>
+                           <p className="leading-tight">{isVencido ? `Al cerrar este turno, el vehículo superará el kilometraje para su service programado a los ${proximoMantenimiento.proximo_km} km.` : `El vehículo está próximo a su service programado a los ${proximoMantenimiento.proximo_km} km. Faltan ${kmsFaltantes} km.`}</p>
+                         </div>
+                      </div>
+                    )
+                  }
+                  return null
+                })()
+              )}
 
               <button type="submit" disabled={saving} className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-red-900/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 text-lg">
                 <span className="material-symbols-outlined">{saving ? 'hourglass_empty' : 'stop_circle'}</span>
