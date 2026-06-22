@@ -35,6 +35,7 @@ export default function AdicionalesAdmin() {
   }
 
   const handleEdit = (adic) => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
     setForm({
       ...adic,
       fecha_inicio: adic.fecha_inicio ? adic.fecha_inicio.substring(0, 16) : '',

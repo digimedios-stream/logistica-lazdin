@@ -35,6 +35,7 @@ export default function Multas() {
   }
 
   const handleEdit = (multa) => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
     setForm({
       ...multa,
       fecha: multa.fecha ? multa.fecha.split('T')[0] : '',

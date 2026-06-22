@@ -32,6 +32,7 @@ export default function VtvRto() {
   }
 
   const handleEdit = (vtv) => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
     setForm({
       ...vtv,
       fecha_realizacion: vtv.fecha_realizacion ? vtv.fecha_realizacion.split('T')[0] : '',

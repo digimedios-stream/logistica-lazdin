@@ -41,6 +41,7 @@ export default function ChoferMantenimientos() {
   }
 
   const handleEdit = (mant) => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
     setForm({
       fecha: mant.fecha ? mant.fecha.split('T')[0] : '',
       tipo: mant.tipo || 'preventivo',

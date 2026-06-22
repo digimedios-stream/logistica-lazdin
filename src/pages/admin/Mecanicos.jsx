@@ -21,6 +21,7 @@ export default function Mecanicos() {
   }
 
   const handleEdit = (mec) => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
     setForm(mec)
     setIsEditing(true)
   }

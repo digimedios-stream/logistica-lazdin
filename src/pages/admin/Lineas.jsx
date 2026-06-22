@@ -146,6 +146,7 @@ export default function LineasPage() {
   }
 
   const handleEdit = (linea) => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
     setForm(linea)
     setIsEditing(true)
   }

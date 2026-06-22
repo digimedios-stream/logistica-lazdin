@@ -99,6 +99,7 @@ export default function Combustible() {
   }
 
   const handleEdit = (carga) => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
     setForm({
       id: carga.id,
       vehiculo_id: carga.vehiculo_id || '',

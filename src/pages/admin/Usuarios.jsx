@@ -43,6 +43,7 @@ export default function Usuarios() {
   }
 
   const handleEdit = (u) => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
     setForm({
       id: u.id,
       email: u.email,

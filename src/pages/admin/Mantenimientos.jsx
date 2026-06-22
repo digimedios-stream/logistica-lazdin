@@ -35,6 +35,7 @@ export default function Mantenimientos() {
   }
 
   const handleEdit = (mant) => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
     setForm({
       ...mant,
       fecha: mant.fecha ? mant.fecha.split('T')[0] : '',

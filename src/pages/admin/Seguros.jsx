@@ -32,6 +32,7 @@ export default function Seguros() {
   }
 
   const handleEdit = (seg) => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
     setForm({
       ...seg,
       fecha_inicio: seg.fecha_inicio ? seg.fecha_inicio.split('T')[0] : '',
