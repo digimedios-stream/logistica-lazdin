@@ -206,11 +206,11 @@ export default function AdminDashboard() {
           <table className="w-full text-left">
             <thead className="bg-lazdin-surface-low text-xs font-bold uppercase text-lazdin-on-surface-variant">
               <tr>
-                <th className="px-6 py-4">Tipo</th>
-                <th className="px-6 py-4">Descripción</th>
-                <th className="px-6 py-4">Vehículo</th>
-                <th className="px-6 py-4">Fecha Límite</th>
-                <th className="px-6 py-4">Estado</th>
+                <th className="px-4 py-4">Tipo</th>
+                <th className="px-4 py-4 hidden sm:table-cell">Descripción</th>
+                <th className="px-4 py-4">Vehículo</th>
+                <th className="px-4 py-4 hidden md:table-cell">Fecha Límite</th>
+                <th className="px-4 py-4">Estado</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-lazdin-outline-variant/10 text-sm">
@@ -218,14 +218,20 @@ export default function AdminDashboard() {
                 const estado = estadoVencimiento(v.fecha_vencimiento)
                 return (
                   <tr key={i} className="table-row-hover">
-                    <td className="px-6 py-4 font-medium">{v.entidad_tipo}</td>
-                    <td className="px-6 py-4">{v.descripcion}</td>
-                    <td className="px-6 py-4 font-mono text-sm">{v.vehiculo_patente || v.chofer_nombre || '—'}</td>
-                    <td className="px-6 py-4">{formatFechaCorta(v.fecha_vencimiento)}</td>
-                    <td className="px-6 py-4">
-                      <span className={`badge-${estado.urgencia === 'critico' || estado.urgencia === 'urgente' ? 'urgente' : estado.urgencia === 'proximo' ? 'pendiente' : 'vigente'}`}>
-                        {estado.label}
-                      </span>
+                    <td className="px-4 py-4 font-medium text-sm">{v.entidad_tipo}</td>
+                    <td className="px-4 py-4 text-sm hidden sm:table-cell">{v.descripcion}</td>
+                    <td className="px-4 py-4 font-mono text-sm">
+                      {v.vehiculo_patente || v.chofer_nombre || '—'}
+                      <div className="text-xs text-slate-500 sm:hidden">{v.descripcion}</div>
+                    </td>
+                    <td className="px-4 py-4 text-sm hidden md:table-cell">{formatFechaCorta(v.fecha_vencimiento)}</td>
+                    <td className="px-4 py-4">
+                      <div>
+                        <span className={`badge-${estado.urgencia === 'critico' || estado.urgencia === 'urgente' ? 'urgente' : estado.urgencia === 'proximo' ? 'pendiente' : 'vigente'}`}>
+                          {estado.label}
+                        </span>
+                        <div className="text-[10px] text-slate-500 mt-1 md:hidden">{formatFechaCorta(v.fecha_vencimiento)}</div>
+                      </div>
                     </td>
                   </tr>
                 )
@@ -257,11 +263,11 @@ export default function AdminDashboard() {
             <table className="w-full text-left">
               <thead className="bg-lazdin-surface-low text-xs font-bold uppercase text-lazdin-on-surface-variant">
                 <tr>
-                  <th className="px-6 py-4">Vehículo</th>
-                  <th className="px-6 py-4">Descripción</th>
-                  <th className="px-6 py-4">Km Actual</th>
-                  <th className="px-6 py-4">Programado</th>
-                  <th className="px-6 py-4">Estado</th>
+                  <th className="px-4 py-4">Vehículo</th>
+                  <th className="px-4 py-4 hidden sm:table-cell">Descripción</th>
+                  <th className="px-4 py-4 hidden md:table-cell">Km Actual</th>
+                  <th className="px-4 py-4 hidden md:table-cell">Programado</th>
+                  <th className="px-4 py-4">Estado</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-lazdin-outline-variant/10 text-sm">
@@ -270,11 +276,15 @@ export default function AdminDashboard() {
                   const restantes = m.proximo_km - m.vehiculo.kilometraje_actual
                   return (
                     <tr key={i} className="table-row-hover">
-                      <td className="px-6 py-4 font-medium">{m.vehiculo.marca} {m.vehiculo.modelo} ({m.vehiculo.patente})</td>
-                      <td className="px-6 py-4">{m.descripcion}</td>
-                      <td className="px-6 py-4 font-mono text-sm">{formatKm(m.vehiculo.kilometraje_actual)}</td>
-                      <td className="px-6 py-4 font-mono text-sm">{formatKm(m.proximo_km)}</td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-4 font-medium text-sm">
+                        {m.vehiculo.marca} {m.vehiculo.modelo}
+                        <span className="font-mono text-xs text-slate-500 ml-1">({m.vehiculo.patente})</span>
+                        <div className="text-xs text-slate-500 mt-1 sm:hidden">{m.descripcion}</div>
+                      </td>
+                      <td className="px-4 py-4 text-sm hidden sm:table-cell">{m.descripcion}</td>
+                      <td className="px-4 py-4 font-mono text-sm hidden md:table-cell">{formatKm(m.vehiculo.kilometraje_actual)}</td>
+                      <td className="px-4 py-4 font-mono text-sm hidden md:table-cell">{formatKm(m.proximo_km)}</td>
+                      <td className="px-4 py-4">
                         <span className={`badge-${vencido ? 'urgente' : 'pendiente'}`}>
                           {vencido ? 'VENCIDO' : `Faltan ${restantes} km`}
                         </span>

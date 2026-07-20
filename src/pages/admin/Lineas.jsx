@@ -255,7 +255,7 @@ export default function LineasPage() {
           ) : lineas.map(linea => (
             <div 
               key={linea.id} 
-              className={`bg-lazdin-surface border ${linea.turnoActivo ? 'border-emerald-500/30 border-l-4 border-l-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.05)]' : linea.ultimoTurno ? 'border-slate-800 border-l-4 border-l-slate-500' : 'border-slate-800 border-l-4 border-l-slate-700/60 opacity-80'} rounded-xl p-5 shadow-lg flex justify-between items-center hover:border-slate-600 transition-colors`}
+              className={`bg-lazdin-surface border ${linea.turnoActivo ? 'border-emerald-500/30 border-l-4 border-l-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.05)]' : linea.ultimoTurno ? 'border-slate-800 border-l-4 border-l-slate-500' : 'border-slate-800 border-l-4 border-l-slate-700/60 opacity-80'} rounded-xl p-5 shadow-lg flex flex-col md:flex-row justify-between md:items-center gap-4 hover:border-slate-600 transition-colors`}
             >
               <div>
                 <h4 className="font-black text-lg text-white flex flex-wrap items-center gap-2.5">
@@ -428,7 +428,7 @@ export default function LineasPage() {
                    </button>
                 </div>
               </div>
-              <div className="flex flex-col items-end gap-3 self-start">
+              <div className="flex md:flex-col items-center md:items-end justify-end gap-3 md:self-start shrink-0">
                 {linea.remuneracion_base > 0 && <span className="text-emerald-400 font-bold">{formatMoneda(linea.remuneracion_base)}</span>}
                 <div className="flex items-center gap-1">
                   <button onClick={() => handleEdit(linea)} className="text-slate-500 hover:text-white transition-colors p-2" title="Editar">

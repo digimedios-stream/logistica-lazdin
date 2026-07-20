@@ -97,14 +97,14 @@ export default function Vehiculos() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-lazdin-surface-high border-b border-slate-800">
-                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Vehículo</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Patente</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Modelo</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Kilometraje</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Personal Asignado</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Titularidad</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Estado VTV</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-right">Acciones</th>
+                <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Vehículo</th>
+                <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest hidden sm:table-cell">Patente</th>
+                <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest hidden lg:table-cell">Modelo</th>
+                <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest hidden md:table-cell">Kilometraje</th>
+                <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest hidden xl:table-cell">Personal Asignado</th>
+                <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest hidden lg:table-cell">Titularidad</th>
+                <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest hidden sm:table-cell">Estado VTV</th>
+                <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-right">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
@@ -119,18 +119,25 @@ export default function Vehiculos() {
                 
                 return (
                   <tr key={v.id} className="table-row-hover">
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-10 rounded bg-slate-800 overflow-hidden flex-shrink-0 flex items-center justify-center">
-                          {v.foto_url ? <img src={v.foto_url} alt="" className="w-full h-full object-cover" /> : <span className="material-symbols-outlined text-slate-600">local_shipping</span>}
+                        <div className="w-10 h-9 rounded bg-slate-800 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                          {v.foto_url ? <img src={v.foto_url} alt="" className="w-full h-full object-cover" /> : <span className="material-symbols-outlined text-slate-600 text-base">local_shipping</span>}
                         </div>
-                        <span className="text-sm font-medium">{v.marca} {v.modelo}</span>
+                        <div>
+                          <span className="text-sm font-medium">{v.marca} {v.modelo}</span>
+                          {/* Mobile: mostrar patente y VTV inline */}
+                          <div className="sm:hidden">
+                            <span className="text-xs font-mono bg-slate-800 px-1.5 py-0.5 rounded text-slate-300 mr-2">{formatPatente(v.patente)}</span>
+                            {vtvEstado && <span className={`text-[10px] font-bold text-${vtvEstado.color}-500`}>{vtvEstado.label}</span>}
+                          </div>
+                        </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4"><span className="text-sm font-mono bg-slate-800 px-2 py-1 rounded text-slate-300">{formatPatente(v.patente)}</span></td>
-                    <td className="px-6 py-4 text-sm text-slate-400">{v.tipo} {v.anio}</td>
-                    <td className="px-6 py-4 text-sm">{formatKm(v.kilometraje_actual)}</td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-4 hidden sm:table-cell"><span className="text-sm font-mono bg-slate-800 px-2 py-1 rounded text-slate-300">{formatPatente(v.patente)}</span></td>
+                    <td className="px-4 py-4 text-sm text-slate-400 hidden lg:table-cell">{v.tipo} {v.anio}</td>
+                    <td className="px-4 py-4 text-sm hidden md:table-cell">{formatKm(v.kilometraje_actual)}</td>
+                    <td className="px-4 py-4 hidden xl:table-cell">
                       {choferesAsignados.length > 0 ? (
                         <div className="flex flex-col gap-1">
                           {choferesAsignados.map((nombre, idx) => (
@@ -144,12 +151,12 @@ export default function Vehiculos() {
                         <span className="text-xs text-slate-500 italic">Sin asignar</span>
                       )}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-4 hidden lg:table-cell">
                       <span className={v.tipo_propietario === 'propio' ? 'badge-propio' : 'badge-tercero'}>
                         {tipoPropietarioLabel(v.tipo_propietario)}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-4 hidden sm:table-cell">
                       {vtvEstado ? (
                         <div className="flex items-center gap-2">
                           <div className={`w-2 h-2 rounded-full bg-${vtvEstado.color}-500`} />
@@ -159,7 +166,7 @@ export default function Vehiculos() {
                         </div>
                       ) : <span className="text-xs text-slate-500">Sin datos</span>}
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-4 py-4 text-right">
                       <Link to={`/admin/vehiculos/${v.id}`} className="p-2 text-slate-500 hover:text-lazdin-emerald transition-colors inline-block" title="Ver Detalles">
                         <span className="material-symbols-outlined text-lg">visibility</span>
                       </Link>

@@ -67,11 +67,11 @@ export default function Choferes() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-lazdin-surface-high border-b border-slate-800">
-                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Chofer</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Contacto</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Vehículo Asignado</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Licencia Nacional</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-right">Acciones</th>
+                <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Chofer</th>
+                <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest hidden sm:table-cell">Contacto</th>
+                <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest hidden md:table-cell">Vehículo Asignado</th>
+                <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest hidden lg:table-cell">Licencia Nacional</th>
+                <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-right">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
@@ -85,9 +85,9 @@ export default function Choferes() {
                 
                 return (
                   <tr key={c.id} className="table-row-hover">
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-slate-800 overflow-hidden flex-shrink-0 flex items-center justify-center border border-slate-700 shadow-inner">
+                        <div className="w-9 h-9 rounded-full bg-slate-800 overflow-hidden flex-shrink-0 flex items-center justify-center border border-slate-700 shadow-inner">
                           {c.foto_url ? (
                             <img src={c.foto_url} alt={c.nombre} className="w-full h-full object-cover" />
                           ) : (
@@ -97,14 +97,18 @@ export default function Choferes() {
                         <div>
                           <p className="font-bold text-sm text-white">{c.nombre}</p>
                           <p className="text-xs text-slate-500 mt-0.5">DNI {c.dni}</p>
+                          {/* En mobile mostramos vehículo inline */}
+                          <p className="text-xs text-sky-400 mt-0.5 md:hidden">
+                            {asigActiva?.vehiculo ? `${asigActiva.vehiculo.marca} ${asigActiva.vehiculo.modelo}` : <span className="text-slate-500 italic">Sin vehículo</span>}
+                          </p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm">
+                    <td className="px-4 py-4 text-sm hidden sm:table-cell">
                       {c.telefono_contacto && <p className="text-slate-300 flex items-center gap-1"><span className="material-symbols-outlined text-[14px] text-slate-500">call</span> {c.telefono_contacto}</p>}
-                      {c.email && <p className="text-slate-400 text-xs mt-1">{c.email}</p>}
+                      {c.email && <p className="text-slate-400 text-xs mt-1 truncate max-w-[160px]">{c.email}</p>}
                     </td>
-                    <td className="px-6 py-4 text-sm">
+                    <td className="px-4 py-4 text-sm hidden md:table-cell">
                       {asigActiva?.vehiculo ? (
                         <div className="flex flex-col">
                            <span className="font-medium text-sky-400">{asigActiva.vehiculo.marca} {asigActiva.vehiculo.modelo}</span>
@@ -112,7 +116,7 @@ export default function Choferes() {
                         </div>
                       ) : <span className="text-slate-500 italic text-xs">Sin vehículo</span>}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-4 hidden lg:table-cell">
                       {licEstado ? (
                         <div>
                           <p className={`text-xs font-bold text-${licEstado.color}-500 mb-1`}>{licEstado.label}</p>
@@ -121,7 +125,7 @@ export default function Choferes() {
                         </div>
                       ) : <span className="text-xs text-slate-500">Sin datos</span>}
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-4 py-4 text-right">
                       <Link to={`/admin/choferes/${c.id}/editar`} className="p-2 text-slate-500 hover:text-lazdin-emerald transition-colors inline-block" title="Editar Chofer">
                         <span className="material-symbols-outlined text-lg">edit</span>
                       </Link>

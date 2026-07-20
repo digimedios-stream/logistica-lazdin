@@ -27,7 +27,7 @@ export default function ChoferLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-lazdin-bg flex flex-col">
+    <div className="min-h-screen bg-lazdin-bg flex flex-col overflow-x-hidden">
       {/* Overlay para móvil */}
       {sidebarOpen && (
         <div 
@@ -180,8 +180,10 @@ export default function ChoferLayout() {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 pt-20 pb-8 px-4 md:px-8 md:ml-64 max-w-7xl mx-auto w-full">
-        <Outlet />
+      <main className="flex-1 pt-20 pb-8 px-4 md:px-8 md:ml-64 w-full min-w-0 overflow-x-hidden">
+        <div className="w-full min-w-0 max-w-full">
+          <Outlet />
+        </div>
       </main>
 
       {/* Footer */}

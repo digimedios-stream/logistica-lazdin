@@ -43,7 +43,7 @@ export default function AdminLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-lazdin-bg flex flex-col">
+    <div className="min-h-screen bg-lazdin-bg flex flex-col overflow-x-hidden">
       {/* Overlay para móvil cuando el menú está abierto */}
       {sidebarOpen && (
         <div 
@@ -185,12 +185,14 @@ export default function AdminLayout() {
       </header>
 
       {/* Main content */}
-      <main className={`flex-1 pt-20 pb-8 px-4 md:px-8 transition-all duration-300 w-full ${sidebarOpen ? 'md:ml-64' : 'md:ml-20'}`}>
-        <Outlet />
+      <main className={`flex-1 pt-20 pb-8 px-4 md:px-6 transition-all duration-300 min-w-0 overflow-x-hidden ${sidebarOpen ? 'md:ml-64' : 'md:ml-20'}`}>
+        <div className="w-full min-w-0 max-w-full">
+          <Outlet />
+        </div>
       </main>
 
       {/* Footer */}
-      <footer className={`mt-auto pt-6 pb-24 md:pb-6 px-8 border-t border-slate-800/50 transition-all duration-300 ${sidebarOpen ? 'md:ml-64' : 'md:ml-20'}`}>
+      <footer className={`mt-auto pt-6 pb-24 md:pb-6 px-4 md:px-8 border-t border-slate-800/50 transition-all duration-300 ${sidebarOpen ? 'md:ml-64' : 'md:ml-20'}`}>
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-[10px] text-slate-500 font-medium uppercase tracking-widest">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
